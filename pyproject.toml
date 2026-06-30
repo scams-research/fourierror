@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatching.build"
+
+[project]
+name = "fourierror"
+dynamic = ["version"]
+description = "Propagation of uncertainty through a Fourier transform"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+
+[project.urls]
+homepage = "https://github.com/scams-research/fourierror"
+
+[tool.hatch.build]
+include = ['fourierror']
+
+[tool.hatch.version]
+path = "fourierror/__init__.py"
