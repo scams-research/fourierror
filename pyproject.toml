@@ -18,3 +18,14 @@ include = ['fourierror']
 
 [tool.hatch.version]
 path = "fourierror/__init__.py"
+
+dependencies = [
+    'numpy>=2.0.0',
+    'scipy>=1.9.3',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest',
+    'pytest-cov',
+]
