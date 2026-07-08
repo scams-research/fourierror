@@ -24,7 +24,7 @@ class TestNumerical(unittest.TestCase):
     Tests for the numerical modules
     """
 
-    def without_errors(self):
+    def test_without_errors(self):
         omega = sc.arange(dim="omega", start=0, stop=25)
         f = numerical.fft(DATA, omega)
         assert list(f.keys()) == ["real", "imag"]
