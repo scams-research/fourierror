@@ -1,6 +1,6 @@
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatching.build"
+build-backend = "hatchling.build"
 
 [project]
 name = "fourierror"
@@ -22,10 +22,11 @@ path = "fourierror/__init__.py"
 dependencies = [
     'numpy>=2.0.0',
     'scipy>=1.9.3',
+    'scipp>=24.8.0'
 ]
 
 [project.optional-dependencies]
 dev = [
     'pytest',
-    'pytest-cov',
+    'pytest-cov'
 ]
