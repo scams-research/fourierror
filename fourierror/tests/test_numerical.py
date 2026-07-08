@@ -25,8 +25,7 @@ class TestNumerical(unittest.TestCase):
     """
 
     def test_without_errors(self):
-        omega = sc.arange(dim="omega", start=0, stop=25)
-        f = numerical.dft(DATA, omega)
+        f = numerical.dft(DATA)
         # These two lines should be removed and the other lines uncommented.
         _ = f
         pass

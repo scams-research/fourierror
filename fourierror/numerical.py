@@ -1,4 +1,4 @@
-def dft(data, omega):
+def dft(data):
     """
     Discrete Fourier transform
     """
