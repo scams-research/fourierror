@@ -32,7 +32,7 @@ jobs:
         pip install pytest-cov
     - name: Generate coverage report
       run: |
-        pytest --cov-report xml:coverage.xml --cov=kinisi 
+        pytest --cov-report xml:coverage.xml --cov=fourierror
     - name: Get Cover 
       uses: orgoro/coverage@v3.2
       with:
