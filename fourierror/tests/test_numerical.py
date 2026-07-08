@@ -1,3 +1,11 @@
+"""
+Tests for the numerical module
+"""
+
+# Copyright (c) fourierror developers.
+# Distributed under the terms of the MIT License.
+# author: Andrew R. McCluskey (arm61)
+
 import unittest
 
 import numpy as np

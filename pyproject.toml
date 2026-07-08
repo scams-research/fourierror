@@ -8,6 +8,12 @@ dynamic = ["version"]
 description = "Propagation of uncertainty through a Fourier transform"
 readme = "README.md"
 license = "MIT"
+authors = [
+    {name = "Andrew R. McCluskey", email = "andrew.mccluskey@bristol.ac.uk"}
+]
+maintainers = [
+    {name = "Andrew R. McCluskey", email = "andrew.mccluskey@bristol.ac.uk"}
+]
 requires-python = ">=3.10"
 dependencies = [
     'numpy>=2.0.0',
@@ -29,3 +35,6 @@ dev = [
     'pytest',
     'pytest-cov'
 ]
+
+[tool.coverage.run]
+source = ['kinisi']
