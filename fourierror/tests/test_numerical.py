@@ -6,9 +6,9 @@ import scipp as sc
 from fourierror import numerical
 
 
-X = sc.linspace(dim='x', start=0, stop=2*np.pi, num=100, unit='rad')
+X = sc.linspace(dim="x", start=0, stop=2 * np.pi, num=100, unit="rad")
 Y = sc.sin(2 * X) + 2 * sc.cos(10 * X) + 0.6 * sc.sin(20 * X)
-DATA = sc.DataArray(data=Y, coords={'x': X})
+DATA = sc.DataArray(data=Y, coords={"x": X})
 
 
 class TestNumerical(unittest.TestCase):
@@ -17,9 +17,9 @@ class TestNumerical(unittest.TestCase):
     """
 
     def without_errors(self):
-        omega = sc.arange(dim='omega', start=0, stop=25)
+        omega = sc.arange(dim="omega", start=0, stop=25)
         f = numerical.fft(DATA, omega)
-        assert list(f.keys()) == ['real', 'imag']
-        assert list(f.coords.keys()) == ['omega']
-        assert all(np.argsort(np.abs(f['real'].values))[-2:] == [20, 10])
-        assert all(np.argsort(np.abs(f['imag'].values))[-3:] == [20, 10, 2])
+        assert list(f.keys()) == ["real", "imag"]
+        assert list(f.coords.keys()) == ["omega"]
+        assert all(np.argsort(np.abs(f["real"].values))[-2:] == [20, 10])
+        assert all(np.argsort(np.abs(f["imag"].values))[-3:] == [20, 10, 2])
