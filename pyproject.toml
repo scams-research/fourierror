@@ -9,6 +9,11 @@ description = "Propagation of uncertainty through a Fourier transform"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
+dependencies = [
+    'numpy>=2.0.0',
+    'scipy>=1.9.3',
+    'scipp>=24.8.0'
+]
 
 [project.urls]
 homepage = "https://github.com/scams-research/fourierror"
@@ -18,12 +23,6 @@ include = ['fourierror']
 
 [tool.hatch.version]
 path = "fourierror/__init__.py"
-
-dependencies = [
-    'numpy>=2.0.0',
-    'scipy>=1.9.3',
-    'scipp>=24.8.0'
-]
 
 [project.optional-dependencies]
 dev = [
