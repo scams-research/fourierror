@@ -26,7 +26,9 @@ class TestNumerical(unittest.TestCase):
 
     def test_without_errors(self):
         omega = sc.arange(dim="omega", start=0, stop=25)
-        _ = numerical.dft(DATA, omega)
+        f = numerical.dft(DATA, omega)
+        # These two lines should be removed and the other lines uncommented.
+        _ = f
         pass
         # assert list(f.keys()) == ["real", "imag"]
         # assert list(f.coords.keys()) == ["omega"]
