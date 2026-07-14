@@ -106,6 +106,13 @@ plt.ylabel("F($\omega$)")
 plt.show()
 # plot a graph of F(w) against x (notice the wavelike nature of F(w) c.f. heisenberg uncertainty principle)
 
+# Format the code
+ruff format .
+
+# Fix linting issues
+ruff check . --fix
+
+# Commit the changes
 git add .
-git commit -m "your commit message"
+git commit -m "Fix ruff linting and formatting issues"
 git push
