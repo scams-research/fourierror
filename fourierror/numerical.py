@@ -110,11 +110,15 @@ output_filename = f"{name_without_ext}_output.txt"
 np.savetxt(
 f"{output_filename}.txt",
 np.column_stack([w, abs(f_signal(w, signal, dt)), error(master_array)]),
-header="omega\t|F(omega)|\tsigma_F",
+header="omega\t|F(omega)|\terror_F",
 fmt="%.8e",
 delimiter="\t",
 )
 # creates a file called inputfile_output.txt in the same place as input file
+# name is "output_filename.txt"
+# headers are w, F(w), error_F
+# fmt specifies value with 8 signficant values after decimal point
+# delimiter separates each column by a tab rather than a space
 
 plt.plot(w,error(master_array))
 plt.xlabel("Angular frequency, $\omega$ / $\mathrm{rad}\,\mathrm{s}^{-1}$")
