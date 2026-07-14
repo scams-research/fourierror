@@ -71,6 +71,13 @@ fmt="%.8e",
 delimiter="\t",
 )
 
+# Format the code
+ruff format .
+
+# Fix linting issues
+ruff check . --fix
+
+# Commit the changes
 git add .
-git commit -m "your commit message"
+git commit -m "Fix ruff linting and formatting issues"
 git push
