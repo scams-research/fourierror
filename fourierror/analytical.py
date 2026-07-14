@@ -71,9 +71,6 @@ fmt="%.8e",
 delimiter="\t",
 )
 
-# Format the code
-ruff format .
-
 # Fix linting issues
 ruff check . --fix
 
