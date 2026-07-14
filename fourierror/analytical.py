@@ -13,7 +13,7 @@ error_y = data[:, 2]
 N = t.size # number of time-domain data points
 L = t[t.size-1] # length of time-domain timescale i.e. 0 <= t <= L (with N points)
 Q = 5 # length of angular frequency domain i.e. 0 <= w <= Q (with N points)
-w = np.linspace(-Q,Q,N) # angular frequency domain i.e. 0 <= w <= Q (with N points)
+w = np.linspace(0,Q,N) # angular frequency domain i.e. 0 <= w <= Q (with N points)
 cov_y = np.diag(((error_y)*np.sqrt(N))**2)
 # create a covariance matrix of the input error
 # size = N x N
@@ -62,10 +62,10 @@ plt.show()
 # optional but shows the covariance matrix as a heatmap
 
 name_without_ext = os.path.splitext(filename)[0]
-output_filename = f"{name_without_ext}_output.txt"
+output_filename = f"{name_without_ext}_output_anal.txt"
 np.savetxt(
 f"{output_filename}.txt",
-np.column_stack([w, abs(f_w), np.sqrt(N)*(np.sqrt(abs(cov_f)))]),
+np.column_stack([w, abs(f_w), (np.sqrt(abs(np.diag(cov_f))))/np.sqrt(N)]),
 header="omega\t|F(omega)|\terror_F",
 fmt="%.8e",
 delimiter="\t",
