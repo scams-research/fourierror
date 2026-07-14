@@ -6,15 +6,10 @@ from scipy import stats
 import os
 
 filename = input("Enter the name of the file to load: ")
-# prompts user to enter name of file in directory
 data = np.loadtxt(filename)
-# loads data from text file as a nested array with size (N,3)
 t = data[:, 0]
-# takes the first [0] value from each subarray (time)
 signal = data[:, 1]
-# takes the second [1] value from each subarray (y(t))
 sigma_t = data[:, 2]
-# takes the third [2] value from each subarray (error in y(t))
 
 #def dft(data):
     #"""
@@ -25,10 +20,10 @@ sigma_t = data[:, 2]
 # Enter constants here
 N = t.size # number of time-domain data points
 L = t[t.size-1] # length of time-domain timescale i.e. 0 <= t <= L (with N points)
-M = input("Enter the number of random samples you wish to take") # number of samples taken
-Q = input("Enter the maximum angular frequency (minimum being zero) you wish to test") # length of angular frequency domain i.e. 0 <= w <= Q (with P points)
+M = 500 # number of samples taken
+# P = 10 # number of tested angular frequency
+Q = 5 # length of angular frequency domain i.e. 0 <= w <= Q (with P points)
 w = np.linspace(0,Q,N)
-# creates a testing angular frequency domain from 0 to Q with N elements
 cov = np.diag(((sigma_t)*np.sqrt(N))**2)
 # create a covariance matrix with (error*sqrt(N))**2
 # size = N x N
@@ -47,7 +42,6 @@ def delta_t(N,L):
     return L / (N-1)
 
 dt = delta_t(N,L)
-# refer to this as dt from now on as this is constant
 
 def f_signal(w, signal, dt):
     """
@@ -104,27 +98,19 @@ def error(array):
     return sd / np.sqrt(M)
 
 name_without_ext = os.path.splitext(filename)[0]
-# removes the .txt part of input filename
-output_filename = f"{name_without_ext}_output.txt"
-# rewrites the output file in terms of the input file
+output_filename = f"{name_without_ext}_output_num.txt"
 np.savetxt(
 f"{output_filename}.txt",
 np.column_stack([w, abs(f_signal(w, signal, dt)), error(master_array)]),
-header="omega\t|F(omega)|\terror_F",
+header="omega\t|F(omega)|\tsigma_F",
 fmt="%.8e",
 delimiter="\t",
 )
-# creates a file called inputfile_output.txt in the same place as input file
-# name is "output_filename.txt"
-# headers are w, F(w), error_F
-# fmt specifies value with 8 signficant values after decimal point
-# delimiter separates each column by a tab rather than a space
 
 plt.plot(w,error(master_array))
 plt.xlabel("Angular frequency, $\omega$ / $\mathrm{rad}\,\mathrm{s}^{-1}$")
 plt.ylabel("Error in F($\omega$)")
 plt.show()
-# optional but displays the error in each F(w) value graphically
 
 for i in sample_signals:
     plt.plot(w, abs(f_signal(w, i, dt)), 'o', alpha=(1/M), color='blue')
@@ -132,4 +118,4 @@ for i in sample_signals:
 plt.xlabel("Angular frequency, $\omega$ / $\mathrm{rad}\,\mathrm{s}^{-1}$")
 plt.ylabel("F($\omega$)")
 plt.show()
-# also optional but plot a graph of F(w) against x (notice the wavelike nature of F(w) c.f. heisenberg uncertainty principle)
+# plot a graph of F(w) against x (notice the wavelike nature of F(w) c.f. heisenberg uncertainty principle)
