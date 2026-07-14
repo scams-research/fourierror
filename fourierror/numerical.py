@@ -28,20 +28,7 @@ cov = np.diag(((sigma_t)*np.sqrt(N))**2)
 # create a covariance matrix with (error*sqrt(N))**2
 # size = N x N
 
-def delta_t(N,L):
-    """
-    The step in t between consecutive data points from 0 to L
-
-    Args:
-        N : number of discrete data points
-        L : length of time scale measured to be analysed
-
-    Returns:
-        delta_t
-    """
-    return L / (N-1)
-
-dt = delta_t(N,L)
+dt = L / (N-1)
 
 def f_signal(w, signal, dt):
     """
