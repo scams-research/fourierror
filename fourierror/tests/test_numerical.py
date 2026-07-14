@@ -26,10 +26,10 @@ class TestNumerical(unittest.TestCase):
     """
 
     def test_without_errors(self):
-        f = numerical.dft(data=DATA, coord='x')
+        f = numerical.dft(data=DATA, coord="x")
         assert list(f.keys()) == ["real", "imag"]
         assert list(f.coords.keys()) == ["omega"]
-        assert f.coords['omega'].unit == sc.Unit('1/rad')
+        assert f.coords["omega"].unit == sc.Unit("1/rad")
         np_result = np.fft.fft(Y.values)
-        np.allclose(np_result.real, f['real'].values)
-        np.allclose(np_result.imag, f['imag'].values)
+        np.allclose(np_result.real, f["real"].values)
+        np.allclose(np_result.imag, f["imag"].values)
