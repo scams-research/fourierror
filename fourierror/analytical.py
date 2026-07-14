@@ -70,3 +70,7 @@ header="omega\t|F(omega)|\terror_F",
 fmt="%.8e",
 delimiter="\t",
 )
+
+git add .
+git commit -m "your commit message"
+git push
