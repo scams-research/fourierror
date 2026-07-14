@@ -21,7 +21,6 @@ sigma_t = data[:, 2]
 N = t.size # number of time-domain data points
 L = t[t.size-1] # length of time-domain timescale i.e. 0 <= t <= L (with N points)
 M = 500 # number of samples taken
-# P = 10 # number of tested angular frequency
 Q = 5 # length of angular frequency domain i.e. 0 <= w <= Q (with P points)
 w = np.linspace(0,Q,N)
 cov = np.diag(((sigma_t)*np.sqrt(N))**2)
@@ -106,3 +105,7 @@ plt.xlabel("Angular frequency, $\omega$ / $\mathrm{rad}\,\mathrm{s}^{-1}$")
 plt.ylabel("F($\omega$)")
 plt.show()
 # plot a graph of F(w) against x (notice the wavelike nature of F(w) c.f. heisenberg uncertainty principle)
+
+git add .
+git commit -m "your commit message"
+git push
