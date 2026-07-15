@@ -34,4 +34,4 @@ class TestNumerical(unittest.TestCase):
         np.allclose(np_result.real, f["real"].values)
         np.allclose(np_result.imag, f["imag"].values)
         npf_result = np.fft.fftfreq(Y.values.size, 1 / (X[1].value - X[0].value))
-        np.allclose(npf_result, f.coords['omega'].values)
+        np.allclose(npf_result, f.coords["omega"].values)
