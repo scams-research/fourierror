@@ -19,7 +19,7 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     dft_matrix = np.fft.fft(np.eye(data.values.size))
 
     d = data.coords[coord][1:] - data.coords[coord][:-1]
-    if not sc.allclose(d, d):
+    if not sc.allclose(d, d[0]):
         raise TypeError("Values must be evenly spaced to compute a DFT.")
 
     f_samples = (
@@ -35,11 +35,11 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
         dims=["omega"], values=f_imag.mean(1), variances=np.cov(f_imag).diagonal()
     )
 
-    freq = sc.linspace(
-        dim="omega",
-        start=0,
-        stop=d[0].value,
-        num=data.values.size,
-        unit=(1 / data.coords[coord]).unit,
-    )
+    val = 1.0 / (data.values.size * d[0])
+    N = (data.values.size - 1) // 2 + 1
+    p1 = sc.arange(dim="omega", start=0, stop=N, step=1)
+    p2 = sc.arange(dim="omega", start=-(data.values.size // 2), stop=0, step=1)
+    results = sc.concat([p1, p2], dim="omega")
+    freq = results * val
+
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
