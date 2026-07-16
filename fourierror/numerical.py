@@ -23,7 +23,7 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
         raise TypeError("Values must be evenly spaced to compute a DFT.")
 
     f_samples = (
-        (2 / data.values.size) * (d[0].value) * (dft_matrix @ mv_norm.rvs(n_samples).T)
+        (2 / data.values.size) * (dft_matrix @ mv_norm.rvs(n_samples).T)
     )
 
     f_real = f_samples.real
