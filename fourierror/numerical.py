@@ -40,6 +40,6 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     p1 = sc.arange(dim="omega", start=0, stop=N, step=1)
     p2 = sc.arange(dim="omega", start=-(data.values.size // 2), stop=0, step=1)
     results = sc.concat([p1, p2], dim="omega")
-    freq = results * val
+    freq = results * val * 2 * np.pi
 
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
