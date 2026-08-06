@@ -2,6 +2,8 @@ import numpy as np
 import scipp as sc
 from scipy.stats import multivariate_normal
 
+from .freq import frequencies
+
 
 def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
     """
@@ -46,9 +48,7 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with
         an omega axis.
     """
-    d = data.coords[coord][1:] - data.coords[coord][:-1]
-    if not sc.allclose(d, d[0]):
-        raise TypeError("Values must be evenly spaced to compute a DFT.")
+    freq = frequencies(data, coord)
 
     mv_norm = _generate_mv_norm(data)
 
@@ -57,13 +57,6 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     f_samples = (2 / data.values.size) * (dft_matrix @ mv_norm.rvs(n_samples).T)
 
     real, imag = _construct_real_imag_arrays(f_samples)
-
-    val = 1.0 / (data.values.size * d[0])
-    N = (data.values.size - 1) // 2 + 1
-    p1 = sc.arange(dim="omega", start=0, stop=N, step=1)
-    p2 = sc.arange(dim="omega", start=-(data.values.size // 2), stop=0, step=1)
-    results = sc.concat([p1, p2], dim="omega")
-    freq = results * val * 2 * np.pi
 
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
 
