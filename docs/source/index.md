@@ -15,5 +15,6 @@ hidden: True
 ---
 
 installation
+usage
 modules
 ```
