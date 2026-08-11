@@ -46,7 +46,7 @@ jobs:
       - name: Upload built docs as a Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/_build/html
+          path: docs/build/html
 
   deploy:
     needs: build
