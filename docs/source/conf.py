@@ -217,6 +217,5 @@ epub_exclude_files = ["search.html"]
 #     app.add_css_file('custom.css')
 
 intersphinx_mapping = {
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "scipp": ("https://scipp.github.io/", None),
 }
