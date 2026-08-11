@@ -8,7 +8,7 @@ The `fourierror` package enables the propagation of uncertainty through a Fourie
 We recommend [familiarising yourself](https://scipp.github.io/getting-started/index.html) with some of the `scipp` data structures if you want to start using `fourierror`. 
 We are currently preparing a scientific publication htat details how `fourierror` propagates uncertainty and when one should use the numerical or analytical method. 
 
-## [Contributors](https://github.com/kinisi-dev/fourierror/graphs/contributors)
+## [Contributors](https://github.com/scams-research/fourierror/graphs/contributors)
 
 ```{toctree}
 ---
