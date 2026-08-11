@@ -13,7 +13,8 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
 
     :param data: A scipp DataArray with the data to be Fourier transformed.
     :param coord: The coordinate to compute the Fourier transform over.
-    :returns:
+    :returns: A scipp Dataset with real and imaginary values for the Fourier
+        transformed result, with some "frequency" axis.
     """
     freq = frequencies(data, coord)
 

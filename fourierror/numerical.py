@@ -45,7 +45,7 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     :param coord: The coordinate to compute the Fourier transform over.
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
 
-    :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with
+    :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with some "frequency" axis.
         an omega axis.
     """
     freq = frequencies(data, coord)
@@ -69,8 +69,7 @@ def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
     :param coord: The coordinate to compute the fast Fourier transform over.
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
 
-    :returns: A scipp Dataset with real and imaginary values for the fast Fourier transformed result with
-        an omega axis.
+    :returns: A scipp Dataset with real and imaginary values for the fast Fourier transformed result with some "frequency" axis.
     """
     d = data.coords[coord][1:] - data.coords[coord][:-1]
     if not sc.allclose(d, d[0]):
