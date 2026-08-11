@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/fourierror.svg)](https://badge.fury.io/py/fourierror)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/scams-research/fourierror)
 
-Real measurements come with uncertainties. Fourier transforms of real measurements should too.
+*Real measurements come with uncertainties. Fourier transforms of real measurements should too.*
 
 `fourierror` propagates uncertainty through the discrete Fourier transform, giving you variances on the real and imaginary components of the result rather than a bare complex spectrum. 
 Two routes are available: an **analytical** propagation and a **numerical** sampling approach.
