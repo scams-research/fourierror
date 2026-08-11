@@ -77,11 +77,11 @@ def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
 
     mv_norm = _generate_mv_norm(data)
 
-    f_samples = (2 / data.values.size) * np.fft.fft(mv_norm.rvs(n_samples).T)
+    f_samples = (2 / data.values.size) * np.fft.fft(mv_norm.rvs(n_samples)).T
 
     real, imag = _construct_real_imag_arrays(f_samples)
 
-    freq_array = np.fft.fftfreq(data.values.size, d[0].value)
+    freq_array = np.fft.fftfreq(data.values.size, d[0].value) * 2 * np.pi
     freq = sc.array(
         dims=["omega"], values=freq_array, unit=(1 / data.coords[coord]).unit
     )
