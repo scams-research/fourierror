@@ -36,5 +36,13 @@ dev = [
     'pytest-cov'
 ]
 
+docs = [
+    'ipykernel',
+    'nbsphinx',
+    'sphinx_autodoc_typehints',
+    'pydata_sphinx_theme',
+    'myst_parser',
+]
+
 [tool.coverage.run]
-source = ['kinisi']
+source = ['fourierror']
