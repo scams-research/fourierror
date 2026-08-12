@@ -37,7 +37,12 @@ def _construct_real_imag_arrays(f_samples: np.ndarray) -> tuple[sc.DataArray]:
     return real, imag
 
 
-def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [None, int, np.random.Generator] = None) -> sc.Dataset:
+def dft(
+    data: sc.DataArray,
+    coord: str,
+    n_samples: int = 5_000,
+    random_state: [None, int, np.random.Generator] = None,
+) -> sc.Dataset:
     """
     Perform a numerical discrete Fourier transform.
 
@@ -55,14 +60,21 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [N
 
     dft_matrix = np.fft.fft(np.eye(data.values.size))
 
-    f_samples = (2 / data.values.size) * (dft_matrix @ mv_norm.rvs(n_samples, random_state=random_state).T)
+    f_samples = (2 / data.values.size) * (
+        dft_matrix @ mv_norm.rvs(n_samples, random_state=random_state).T
+    )
 
     real, imag = _construct_real_imag_arrays(f_samples)
 
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
 
 
-def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [None, int, np.random.Generator] = None) -> sc.Dataset:
+def fft(
+    data: sc.DataArray,
+    coord: str,
+    n_samples: int = 5_000,
+    random_state: [None, int, np.random.Generator] = None,
+) -> sc.Dataset:
     """
     Perform a numerical fast Fourier transform.
 
@@ -79,7 +91,9 @@ def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [N
 
     mv_norm = _generate_mv_norm(data)
 
-    f_samples = (2 / data.values.size) * np.fft.fft(mv_norm.rvs(n_samples, random_state=random_state)).T
+    f_samples = (2 / data.values.size) * np.fft.fft(
+        mv_norm.rvs(n_samples, random_state=random_state)
+    ).T
 
     real, imag = _construct_real_imag_arrays(f_samples)
 

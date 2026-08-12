@@ -35,7 +35,8 @@ path = "fourierror/__init__.py"
 [project.optional-dependencies]
 dev = [
     'pytest',
-    'pytest-cov'
+    'pytest-cov',
+    'pre-commit'
 ]
 
 docs = [
@@ -43,7 +44,7 @@ docs = [
     'nbsphinx',
     'sphinx_autodoc_typehints',
     'pydata_sphinx_theme',
-    'myst_parser',
+    'myst_parser'
 ]
 
 [tool.coverage.run]
