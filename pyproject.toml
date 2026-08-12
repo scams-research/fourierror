@@ -24,6 +24,7 @@ dependencies = [
 
 [project.urls]
 homepage = "https://github.com/scams-research/fourierror"
+documentation = 'https://scams-research.github.io/fourierror'
 
 [tool.hatch.build]
 include = ['fourierror']

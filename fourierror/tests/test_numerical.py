@@ -10,6 +10,7 @@ import unittest
 
 import numpy as np
 import scipp as sc
+from scipp import testing
 
 from fourierror import numerical
 
@@ -22,7 +23,7 @@ DATA = sc.DataArray(data=Y, coords={"x": X})
 
 class TestNumericalDft(unittest.TestCase):
     """
-    Tests for the numerical dft methods
+    Tests for the numerical dft methods.
     """
 
     def test_without_errors(self):
@@ -39,7 +40,7 @@ class TestNumericalDft(unittest.TestCase):
 
 class TestNumericalFft(unittest.TestCase):
     """
-    Tests for the numerical fft methods
+    Tests for the numerical fft methods.
     """
 
     def test_without_errors(self):
@@ -52,3 +53,18 @@ class TestNumericalFft(unittest.TestCase):
         np.allclose(np_result.imag, f["imag"].values)
         npf_result = np.fft.fftfreq(Y.values.size, 1 / (X[1].value - X[0].value))
         np.allclose(npf_result, f.coords["omega"].values)
+
+class TestComparison(unittest.TestCase):
+    """
+    Tests to compare the results from the different numerical methods.
+    """
+
+    def test_compare(self):
+        dft = numerical.dft(data=DATA, coord="x", random_state=1)
+        fft = numerical.fft(data=DATA, coord="x", random_state=1)
+        np.allclose(dft['real'].values, fft['real'].values)
+        np.allclose(dft['imag'].values, fft['imag'].values)
+        np.allclose(dft['real'].variances, fft['real'].variances)
+        np.allclose(dft['imag'].variances, fft['imag'].variances)
+        testing.assert_allclose(dft['real'], fft['real'], atol=sc.scalar(1e-6))
+        testing.assert_allclose(dft['imag'], fft['imag'], atol=sc.scalar(1e-6))

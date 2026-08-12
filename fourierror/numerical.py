@@ -37,13 +37,14 @@ def _construct_real_imag_arrays(f_samples: np.ndarray) -> tuple[sc.DataArray]:
     return real, imag
 
 
-def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
+def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [None, int, np.random.Generator] = None) -> sc.Dataset:
     """
     Perform a numerical discrete Fourier transform.
 
     :param data: A scipp DataArray with the data to be Fourier transformed.
     :param coord: The coordinate to compute the Fourier transform over.
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
+    :param random_state: Passed to the random sampler to enable reproducibility.
 
     :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with some "frequency" axis.
         an omega axis.
@@ -54,20 +55,21 @@ def dft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
 
     dft_matrix = np.fft.fft(np.eye(data.values.size))
 
-    f_samples = (2 / data.values.size) * (dft_matrix @ mv_norm.rvs(n_samples).T)
+    f_samples = (2 / data.values.size) * (dft_matrix @ mv_norm.rvs(n_samples, random_state=random_state).T)
 
     real, imag = _construct_real_imag_arrays(f_samples)
 
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
 
 
-def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
+def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000, random_state: [None, int, np.random.Generator] = None) -> sc.Dataset:
     """
     Perform a numerical fast Fourier transform.
 
     :param data: A scipp DataArray with the data to be fast Fourier transformed.
     :param coord: The coordinate to compute the fast Fourier transform over.
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
+    :param random_state: Passed to the random sampler to enable reproducibility.
 
     :returns: A scipp Dataset with real and imaginary values for the fast Fourier transformed result with some "frequency" axis.
     """
@@ -77,7 +79,7 @@ def fft(data: sc.DataArray, coord: str, n_samples: int = 5_000) -> sc.Dataset:
 
     mv_norm = _generate_mv_norm(data)
 
-    f_samples = (2 / data.values.size) * np.fft.fft(mv_norm.rvs(n_samples)).T
+    f_samples = (2 / data.values.size) * np.fft.fft(mv_norm.rvs(n_samples, random_state=random_state)).T
 
     real, imag = _construct_real_imag_arrays(f_samples)
 
