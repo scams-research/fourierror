@@ -20,7 +20,7 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     """
     freq = frequencies(data, coord)
 
-    if hasattr(data.data, 'covariance'):
+    if hasattr(data.data, "covariance"):
         cov = data.data.covariance.values
     else:
         cov = np.diag(data.variances)
@@ -52,5 +52,9 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     imag = CovVariable(dims=["omega"], values=f_imag, covariance=var_imag)
     # same as f_real but extracts the imaginary part
 
-    return sc.DataGroup({"real": CovDataArray(data=real, coords={'omega': freq}), 
-                         "imag": CovDataArray(data=imag, coords={'omega': freq})})
+    return sc.DataGroup(
+        {
+            "real": CovDataArray(data=real, coords={"omega": freq}),
+            "imag": CovDataArray(data=imag, coords={"omega": freq}),
+        }
+    )

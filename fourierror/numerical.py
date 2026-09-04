@@ -15,7 +15,7 @@ def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
 
     :returns: A scipy.stats.rv_continuous object that can be sampled.
     """
-    if hasattr(data.data, 'covariance'):
+    if hasattr(data.data, "covariance"):
         cov = data.data.covariance.values
     else:
         cov = np.diag(data.variances)
@@ -32,13 +32,9 @@ def _construct_real_imag_arrays(f_samples: np.ndarray) -> tuple[sc.DataArray]:
         is imaginary.
     """
     f_real = f_samples.real
-    real = CovVariable(
-        dims=["omega"], values=f_real.mean(1), covariance=np.cov(f_real)
-    )
+    real = CovVariable(dims=["omega"], values=f_real.mean(1), covariance=np.cov(f_real))
     f_imag = f_samples.imag
-    imag = CovVariable(
-        dims=["omega"], values=f_imag.mean(1), covariance=np.cov(f_imag)
-    )
+    imag = CovVariable(dims=["omega"], values=f_imag.mean(1), covariance=np.cov(f_imag))
     return real, imag
 
 
@@ -71,8 +67,12 @@ def dft(
 
     real, imag = _construct_real_imag_arrays(f_samples)
 
-    return sc.DataGroup({"real": CovDataArray(data=real, coords={'omega': freq}), 
-                         "imag": CovDataArray(data=imag, coords={'omega': freq})})
+    return sc.DataGroup(
+        {
+            "real": CovDataArray(data=real, coords={"omega": freq}),
+            "imag": CovDataArray(data=imag, coords={"omega": freq}),
+        }
+    )
 
 
 def fft(
@@ -108,6 +108,9 @@ def fft(
         dims=["omega"], values=freq_array, unit=(1 / data.coords[coord]).unit
     )
 
-    return sc.DataGroup({"real": CovDataArray(data=real, coords={'omega': freq}), 
-                         "imag": CovDataArray(data=imag, coords={'omega': freq})})
-
+    return sc.DataGroup(
+        {
+            "real": CovDataArray(data=real, coords={"omega": freq}),
+            "imag": CovDataArray(data=imag, coords={"omega": freq}),
+        }
+    )

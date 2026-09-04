@@ -1,3 +1,6 @@
+import scipp as sc
+
+
 def dft_fft(data: sc.DataArray) -> sc.Dataset:
     """
     Recursion algorithm for computing the standard FFT
@@ -15,13 +18,13 @@ def dft_fft(data: sc.DataArray) -> sc.Dataset:
     index = sc.arange(dim="x", start=0, stop=data.values.size, step=1)
     # creates an index array [0, 1, 2... N-1]
 
-    mask_even = index%2==0
+    mask_even = index % 2 == 0
     # takes every even values [0, 2, 4... N-2]
 
-    mask_odd = index%2==1
+    mask_odd = index % 2 == 1
     # takes every even values [1, 3, 5... N-1]
 
-    base = np.exp( -2j * np.pi / data.values.size)
+    base = np.exp(-2j * np.pi / data.values.size)
     # every element in the dft matrix can be expressed as a natural numbered exponent of this "base" value
 
     x_even = data[mask_even]
@@ -39,17 +42,17 @@ def dft_fft(data: sc.DataArray) -> sc.Dataset:
     for k in np.arange(data.values.size // 2):
         even = f_even["real"].values[k] + 1j * f_even["imag"].values[k]
         odd = f_odd["real"].values[k] + 1j * f_odd["imag"].values[k]
-        f[k] = (even + odd * (base ** k))
-        f[k + data.values.size // 2] = (even - odd * (base ** k))
+        f[k] = even + odd * (base**k)
+        f[k + data.values.size // 2] = even - odd * (base**k)
 
     real = sc.array(dims=["omega"], values=f.real, variances=None)
 
     imag = sc.array(dims=["omega"], values=f.imag, variances=None)
 
     return sc.Dataset({"real": real, "imag": imag})
-    =
-def dft_fft_ONlogN(data: sc.DataArray, coord: str) -> sc.Dataset:
 
+
+def dft_fft_ONlogN(data: sc.DataArray, coord: str) -> sc.Dataset:
     normalisation = 2 / data.values.size
 
     d = data.coords[coord][1:] - data.coords[coord][:-1]
@@ -81,20 +84,26 @@ def dft_fft_ONlogN(data: sc.DataArray, coord: str) -> sc.Dataset:
     index = np.arange(extended_var_fft.size)
     # [0, 1, 2... 2(N-1)]
 
-    cos_2k = extended_var_fft[index%2==0]
+    cos_2k = extended_var_fft[index % 2 == 0]
     # [Re_0, Re_2, Re_4... Re_N-2, Re_0, Re_2... Re_N-2]
 
     var_x_sum = np.sum(data.variances)
     # sum of all var_x
 
-    real_variances = ( (2 / data.values.size) ** 2 ) * (1/2) * (var_x_sum + cos_2k)
+    real_variances = ((2 / data.values.size) ** 2) * (1 / 2) * (var_x_sum + cos_2k)
 
-    imag_variances = ( (2 / data.values.size) ** 2 ) * (1/2) * (var_x_sum - cos_2k)
+    imag_variances = ((2 / data.values.size) ** 2) * (1 / 2) * (var_x_sum - cos_2k)
 
     unnormalised_result = dft_fft(data=data)
-    real = sc.array(dims=["omega"], values=unnormalised_result["real"].values * normalisation, variances=real_variances)
-    imag = sc.array(dims=["omega"], values=unnormalised_result["imag"].values * normalisation, variances=imag_variances)
+    real = sc.array(
+        dims=["omega"],
+        values=unnormalised_result["real"].values * normalisation,
+        variances=real_variances,
+    )
+    imag = sc.array(
+        dims=["omega"],
+        values=unnormalised_result["imag"].values * normalisation,
+        variances=imag_variances,
+    )
 
     return sc.Dataset({"real": real, "imag": imag}, coords={"omega": ang_freq})
-
-output_fft = dft_fft_ONlogN(data=data, coord = "x")

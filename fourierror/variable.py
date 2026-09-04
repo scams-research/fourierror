@@ -31,13 +31,13 @@ from scipp.core.data_group import apply_to_items as _apply_to_items
 from scipp.core.data_group import data_group_nary as _data_group_nary
 
 __all__ = [
-    'CovVariable',
-    'CovarianceError',
-    'concat',
-    'covariance_array',
-    'covariance_scalar',
-    'install_dispatch',
-    'uninstall_dispatch',
+    "CovVariable",
+    "CovarianceError",
+    "concat",
+    "covariance_array",
+    "covariance_scalar",
+    "install_dispatch",
+    "uninstall_dispatch",
 ]
 
 #: Suffix used to build the "mirror" dimension labels of the covariance matrix.
@@ -46,7 +46,7 @@ __all__ = [
 #: two index axes of the matrix must be named differently.
 MIRROR = "'"
 
-_RAD = sc.scalar(1.0, unit='rad')
+_RAD = sc.scalar(1.0, unit="rad")
 
 
 class CovarianceError(RuntimeError):
@@ -193,7 +193,7 @@ class CovVariable(sc.Variable):
             values=values,
             variances=variances,
             unit=unit,
-            **({} if dtype is None else {'dtype': dtype}),
+            **({} if dtype is None else {"dtype": dtype}),
         )
         self._covariance = cov
 
@@ -274,12 +274,12 @@ class CovVariable(sc.Variable):
         cov = _matrix(self._covariance, n)
         sigma = np.sqrt(np.diag(cov))
         outer = np.outer(sigma, sigma)
-        with np.errstate(invalid='ignore', divide='ignore'):
+        with np.errstate(invalid="ignore", divide="ignore"):
             corr = np.where(outer == 0.0, 0.0, cov / outer)
         return sc.array(
             dims=list(self._covariance.dims),
             values=corr.reshape(self._covariance.shape),
-            unit='dimensionless',
+            unit="dimensionless",
         )
 
     @property
@@ -307,7 +307,7 @@ class CovVariable(sc.Variable):
         )
 
     def __repr__(self) -> str:
-        base = sc.Variable.__repr__(self).split('> ', 1)[1]
+        base = sc.Variable.__repr__(self).split("> ", 1)[1]
         corr = np.array2string(_matrix(self.correlation, self._n), precision=3)
         return f"<CovVariable> {base}\n  correlation:\n{corr}"
 
@@ -424,7 +424,7 @@ class CovVariable(sc.Variable):
         sign = sc.array(
             dims=list(values.dims),
             values=np.sign(np.asarray(values.values)),
-            unit='dimensionless',
+            unit="dimensionless",
         )
         return self._chain(sc.abs(values), sign)
 
@@ -542,7 +542,7 @@ class CovVariable(sc.Variable):
         # The Jacobian of a broadcast is a 0/1 selection matrix; through the
         # sandwich it is just a broadcast of ones.
         ones = sc.ones(
-            dims=list(sizes), shape=list(sizes.values()), unit='dimensionless'
+            dims=list(sizes), shape=list(sizes.values()), unit="dimensionless"
         )
         return self._wrap(base, self._sandwich(ones, self._covariance))
 
@@ -570,7 +570,7 @@ class CovVariable(sc.Variable):
 
 #: Inherited methods safe to leave alone: they do not produce a derived
 #: variable whose correlations could be lost.
-_SAFE_INHERITED = frozenset({'plot', 'underlying_size'})
+_SAFE_INHERITED = frozenset({"plot", "underlying_size"})
 
 
 def _unsupported_method(name: str) -> Any:
@@ -581,7 +581,7 @@ def _unsupported_method(name: str) -> Any:
         )
 
     fail.__name__ = name
-    fail.__qualname__ = f'CovVariable.{name}'
+    fail.__qualname__ = f"CovVariable.{name}"
     return fail
 
 
@@ -601,7 +601,7 @@ def _install_unsupported_stubs() -> None:
     them (``bins``, ``dims``) while dispatching.
     """
     for name in dir(sc.Variable):
-        if name.startswith('_') or name in _SAFE_INHERITED:
+        if name.startswith("_") or name in _SAFE_INHERITED:
             continue
         if name in vars(CovVariable):
             continue
@@ -625,14 +625,14 @@ def _as_operand(other: Any) -> sc.Variable:
         return other.to_variable()
     if isinstance(other, sc.Variable):
         return other
-    return sc.scalar(float(other), unit='dimensionless')
+    return sc.scalar(float(other), unit="dimensionless")
 
 
 def _unit_derivative(lhs: sc.Variable, rhs: sc.Variable) -> sc.Variable:
     """A derivative of 1, shaped so the sandwich reaches all output dims."""
     sizes = {**dict(lhs.sizes), **dict(rhs.sizes)}
     _check_dim_labels(sizes)
-    return sc.ones(dims=list(sizes), shape=list(sizes.values()), unit='dimensionless')
+    return sc.ones(dims=list(sizes), shape=list(sizes.values()), unit="dimensionless")
 
 
 def _normalize_index(var: sc.Variable, key: Any) -> tuple[str, Any]:
@@ -701,19 +701,19 @@ def concat(variables: Sequence[CovVariable], dim: str) -> CovVariable:
 #: absent: they return boolean variables, which carry no uncertainty, so
 #: degrading to a plain ``Variable`` there is correct.
 for _op in (
-    '__floordiv__',
-    '__rfloordiv__',
-    '__ifloordiv__',
-    '__mod__',
-    '__rmod__',
-    '__imod__',
-    '__and__',
-    '__or__',
-    '__xor__',
-    '__iand__',
-    '__ior__',
-    '__ixor__',
-    '__invert__',
+    "__floordiv__",
+    "__rfloordiv__",
+    "__ifloordiv__",
+    "__mod__",
+    "__rmod__",
+    "__imod__",
+    "__and__",
+    "__or__",
+    "__xor__",
+    "__iand__",
+    "__ior__",
+    "__ixor__",
+    "__invert__",
 ):
     setattr(CovVariable, _op, _unsupported_method(_op))
 del _op
@@ -725,51 +725,51 @@ del _op
 
 #: Free functions with a covariance-aware equivalent, as name -> implementation.
 _AWARE: dict[str, Any] = {
-    'abs': lambda x: abs(x),
-    'concat': lambda x, dim: concat(x, dim),
-    'cos': lambda x: x.cos(),
-    'exp': lambda x: x.exp(),
-    'log': lambda x: x.log(),
-    'mean': lambda x, dim=None: x.mean(dim),
-    'negative': lambda x: -x,
-    'reciprocal': lambda x: 1.0 / x,
-    'sin': lambda x: x.sin(),
-    'sqrt': lambda x: x.sqrt(),
-    'sum': lambda x, dim=None: x.sum(dim),
-    'to_unit': lambda x, unit, **_: x.to(unit=unit),
-    'transpose': lambda x, dims=None: x.transpose(dims),
+    "abs": lambda x: abs(x),
+    "concat": lambda x, dim: concat(x, dim),
+    "cos": lambda x: x.cos(),
+    "exp": lambda x: x.exp(),
+    "log": lambda x: x.log(),
+    "mean": lambda x, dim=None: x.mean(dim),
+    "negative": lambda x: -x,
+    "reciprocal": lambda x: 1.0 / x,
+    "sin": lambda x: x.sin(),
+    "sqrt": lambda x: x.sqrt(),
+    "sum": lambda x, dim=None: x.sum(dim),
+    "to_unit": lambda x, unit, **_: x.to(unit=unit),
+    "transpose": lambda x, dims=None: x.transpose(dims),
 }
 
 #: Free functions that cannot propagate a covariance and must refuse rather
 #: than quietly return a plain ``Variable``.
 _LOSSY = (
-    'all',
-    'any',
-    'astype',
-    'bin',
-    'ceil',
-    'cumsum',
-    'flatten',
-    'floor',
-    'fold',
-    'hist',
-    'max',
-    'median',
-    'min',
-    'nanhist',
-    'nanmax',
-    'nanmean',
-    'nanmedian',
-    'nanmin',
-    'nanstd',
-    'nansum',
-    'nanvar',
-    'rebin',
-    'round',
-    'sort',
-    'squeeze',
-    'std',
-    'var',
+    "all",
+    "any",
+    "astype",
+    "bin",
+    "ceil",
+    "cumsum",
+    "flatten",
+    "floor",
+    "fold",
+    "hist",
+    "max",
+    "median",
+    "min",
+    "nanhist",
+    "nanmax",
+    "nanmean",
+    "nanmedian",
+    "nanmin",
+    "nanstd",
+    "nansum",
+    "nanvar",
+    "rebin",
+    "round",
+    "sort",
+    "squeeze",
+    "std",
+    "var",
 )
 
 _ORIGINAL_FUNCTIONS: dict[str, Any] = {}
@@ -781,7 +781,7 @@ def _contains_covariance(obj: Any, _depth: int = 0) -> bool:
     Duck-typed on ``_covariance`` so that ``CovDataArray`` is recognised
     without importing it (that module imports this one).
     """
-    if isinstance(obj, sc.Variable | sc.DataArray) and hasattr(obj, '_covariance'):
+    if isinstance(obj, sc.Variable | sc.DataArray) and hasattr(obj, "_covariance"):
         return True
     if _depth > 3:
         return False
@@ -801,7 +801,7 @@ def _make_dispatcher(name: str, original: Any, target: Any) -> Any:
         # data_group_nary (call_func in core/_cpp_wrapper_util.py), so the
         # per-item call would never reach this class.
         if (
-            name == 'concat'
+            name == "concat"
             and args
             and isinstance(args[0], list | tuple)
             and any(isinstance(v, sc.DataGroup) for v in args[0])
