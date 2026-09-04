@@ -42,7 +42,7 @@ COV3 = np.array([[0.04, 0.02, 0.00], [0.02, 0.09, -0.01], [0.00, -0.01, 0.16]])
 @pytest.fixture
 def a():
     return covariance_array(
-        dims=['x'], values=[1.0, 2.0, 3.0], covariance=COV3, unit='m'
+        dims=["x"], values=[1.0, 2.0, 3.0], covariance=COV3, unit="m"
     )
 
 
@@ -56,8 +56,8 @@ def cov_matrix(var):
 
 def test_is_a_scipp_variable(a):
     assert isinstance(a, sc.Variable)
-    assert a.dims == ('x',)
-    assert a.unit == sc.Unit('m')
+    assert a.dims == ("x",)
+    assert a.unit == sc.Unit("m")
 
 
 def test_variances_are_the_diagonal_of_the_covariance(a):
@@ -65,8 +65,8 @@ def test_variances_are_the_diagonal_of_the_covariance(a):
 
 
 def test_covariance_carries_squared_unit(a):
-    assert a.covariance.unit == sc.Unit('m**2')
-    assert a.covariance.dims == ('x', "x'")
+    assert a.covariance.unit == sc.Unit("m**2")
+    assert a.covariance.dims == ("x", "x'")
 
 
 def test_setting_variances_is_rejected(a):
@@ -87,7 +87,7 @@ def test_setting_covariance_updates_variances(a):
 
 
 def test_from_variable_assumes_no_correlation():
-    v = sc.array(dims=['x'], values=[1.0, 2.0], variances=[0.1, 0.2], unit='s')
+    v = sc.array(dims=["x"], values=[1.0, 2.0], variances=[0.1, 0.2], unit="s")
     c = CovVariable.from_variable(v)
     np.testing.assert_allclose(cov_matrix(c), np.diag([0.1, 0.2]))
 
@@ -101,7 +101,7 @@ def test_to_variable_preserves_marginal_variances(a):
 def test_html_repr_is_not_prefixed_with_scipp(a):
     html = a._repr_html_()
     assert "sc-obj-type'>CovVariable " in html
-    assert 'scipp.CovVariable' not in html
+    assert "scipp.CovVariable" not in html
 
 
 def test_reserved_dimension_label_is_rejected():
@@ -113,9 +113,9 @@ def test_reserved_dimension_label_is_rejected():
 
 
 def test_addition_of_independent_variables():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
     b = covariance_array(
-        dims=['x'], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit='m'
+        dims=["x"], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit="m"
     )
     result = a + b
     np.testing.assert_allclose(result.values, [4.0, 6.0])
@@ -123,9 +123,9 @@ def test_addition_of_independent_variables():
 
 
 def test_multiplication_matches_reference():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
     b = covariance_array(
-        dims=['x'], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit='s'
+        dims=["x"], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit="s"
     )
     result = a * b
     expected = reference_propagate(
@@ -139,13 +139,13 @@ def test_multiplication_matches_reference():
         ),
     )
     np.testing.assert_allclose(cov_matrix(result), expected, rtol=1e-6)
-    assert result.unit == sc.Unit('m*s')
+    assert result.unit == sc.Unit("m*s")
 
 
 def test_division_matches_reference():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
     b = covariance_array(
-        dims=['x'], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit='s'
+        dims=["x"], values=[3.0, 4.0], covariance=np.diag([0.01, 0.02]), unit="s"
     )
     result = a / b
     expected = reference_propagate(
@@ -175,15 +175,15 @@ def test_self_subtraction_is_exactly_zero(a):
 
 
 def test_scalar_operand():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
     np.testing.assert_allclose(cov_matrix(a * 3.0), 9 * COV2)
     np.testing.assert_allclose(cov_matrix(3.0 * a), 9 * COV2)
-    np.testing.assert_allclose(cov_matrix(a + sc.scalar(1.0, unit='m')), COV2)
+    np.testing.assert_allclose(cov_matrix(a + sc.scalar(1.0, unit="m")), COV2)
 
 
 def test_reflected_operators_take_priority():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    plain = sc.array(dims=['x'], values=[1.0, 1.0], unit='m')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    plain = sc.array(dims=["x"], values=[1.0, 1.0], unit="m")
     assert isinstance(plain + a, CovVariable)
     assert isinstance(plain * a, CovVariable)
     result = plain - a
@@ -198,23 +198,23 @@ def test_negation(a):
 
 
 def test_power_matches_reference():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2)
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
     expected = reference_propagate(lambda v: v**3, [1.0, 2.0], COV2)
     np.testing.assert_allclose(cov_matrix(a**3), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize(
-    ('name', 'func', 'unit'),
+    ("name", "func", "unit"),
     [
-        ('sqrt', np.sqrt, 'dimensionless'),
-        ('exp', np.exp, 'dimensionless'),
-        ('log', np.log, 'dimensionless'),
-        ('sin', np.sin, 'rad'),
-        ('cos', np.cos, 'rad'),
+        ("sqrt", np.sqrt, "dimensionless"),
+        ("exp", np.exp, "dimensionless"),
+        ("log", np.log, "dimensionless"),
+        ("sin", np.sin, "rad"),
+        ("cos", np.cos, "rad"),
     ],
 )
 def test_unary_functions_match_reference(name, func, unit):
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit=unit)
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit=unit)
     result = getattr(a, name)()
     expected = reference_propagate(func, [1.0, 2.0], COV2)
     np.testing.assert_allclose(cov_matrix(result), expected, rtol=1e-5)
@@ -224,8 +224,8 @@ def test_unary_functions_match_reference(name, func, unit):
 
 
 def test_sum_accounts_for_off_diagonal_terms():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    total = a.sum('x')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    total = a.sum("x")
     assert float(total.variance) == pytest.approx(COV2.sum())
     # Plain scipp would give only the sum of the diagonal, underestimating:
     assert float(sc.sum(a.to_variable()).variance) == pytest.approx(np.trace(COV2))
@@ -233,14 +233,14 @@ def test_sum_accounts_for_off_diagonal_terms():
 
 
 def test_mean_scales_covariance_by_n_squared():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    assert float(a.mean('x').variance) == pytest.approx(COV2.sum() / 4)
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    assert float(a.mean("x").variance) == pytest.approx(COV2.sum() / 4)
 
 
 def test_broadcast_is_allowed_and_records_correlations():
-    a = covariance_scalar(2.0, variance=0.25, unit='m')
-    wide = a.broadcast(sizes={'x': 3})
-    assert wide.dims == ('x',)
+    a = covariance_scalar(2.0, variance=0.25, unit="m")
+    wide = a.broadcast(sizes={"x": 3})
+    assert wide.dims == ("x",)
     # Every element is the same measurement: perfectly correlated.
     np.testing.assert_allclose(cov_matrix(wide), np.full((3, 3), 0.25))
     np.testing.assert_allclose(wide.correlation.values, np.ones((3, 3)))
@@ -248,7 +248,7 @@ def test_broadcast_is_allowed_and_records_correlations():
 
 def test_broadcast_of_variances_is_forbidden_in_plain_scipp():
     """This is what ADR 0015 protects against, and what a covariance lifts."""
-    data = sc.array(dims=['x'], values=[10.0, 20.0], variances=[10.0, 20.0])
+    data = sc.array(dims=["x"], values=[10.0, 20.0], variances=[10.0, 20.0])
     norm = sc.scalar(2.0, variance=0.04)
     with pytest.raises(sc.VariancesError):
         data / norm
@@ -261,7 +261,7 @@ def test_broadcast_of_variances_is_forbidden_in_plain_scipp():
 def test_normalisation_by_a_broadcast_denominator():
     """The neutron-normalisation case from ADR 0015 / doi:10.3233/JNR-220049."""
     data = covariance_array(
-        dims=['x'], values=[10.0, 20.0], covariance=np.diag([10.0, 20.0]), unit='counts'
+        dims=["x"], values=[10.0, 20.0], covariance=np.diag([10.0, 20.0]), unit="counts"
     )
     norm = covariance_scalar(2.0, variance=0.04)
     result = data / norm
@@ -280,20 +280,20 @@ def test_normalisation_by_a_broadcast_denominator():
     assert cov_matrix(result)[0, 1] > 0.0
     # And the total is more uncertain than an uncorrelated treatment implies.
     naive = np.trace(cov_matrix(result))
-    assert float(result.sum('x').variance) > naive
+    assert float(result.sum("x").variance) > naive
 
 
 # -- shape operations -------------------------------------------------------
 
 
 def test_slicing_selects_both_index_axes(a):
-    s = a['x', 0:2]
+    s = a["x", 0:2]
     np.testing.assert_allclose(s.values, [1.0, 2.0])
     np.testing.assert_allclose(cov_matrix(s), COV3[:2, :2])
 
 
 def test_integer_indexing_gives_a_scalar(a):
-    s = a['x', 1]
+    s = a["x", 1]
     assert s.dims == ()
     assert float(s.variance) == pytest.approx(COV3[1, 1])
 
@@ -304,25 +304,25 @@ def test_transpose_reorders_both_index_axes():
     rng = np.random.default_rng(1)
     m = rng.normal(size=(n, n))
     cov = (m @ m.T).reshape(2, 3, 2, 3)
-    v = covariance_array(dims=['x', 'y'], values=values, covariance=cov, unit='m')
-    t = v.transpose(['y', 'x'])
-    assert t.dims == ('y', 'x')
-    assert t.covariance.dims == ('y', 'x', "y'", "x'")
+    v = covariance_array(dims=["x", "y"], values=values, covariance=cov, unit="m")
+    t = v.transpose(["y", "x"])
+    assert t.dims == ("y", "x")
+    assert t.covariance.dims == ("y", "x", "y'", "x'")
     np.testing.assert_allclose(t.values, values.T)
     np.testing.assert_allclose(cov_matrix(t), cov.transpose(1, 0, 3, 2).reshape(n, n))
 
 
 def test_unit_conversion_scales_covariance_quadratically():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    cm = a.to(unit='cm')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    cm = a.to(unit="cm")
     np.testing.assert_allclose(cm.values, [100.0, 200.0])
     np.testing.assert_allclose(cov_matrix(cm), COV2 * 1e4)
 
 
 def test_concat_is_block_diagonal():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    b = covariance_array(dims=['x'], values=[3.0], covariance=[[0.01]], unit='m')
-    c = concat([a, b], 'x')
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    b = covariance_array(dims=["x"], values=[3.0], covariance=[[0.01]], unit="m")
+    c = concat([a, b], "x")
     expected = np.zeros((3, 3))
     expected[:2, :2] = COV2
     expected[2, 2] = 0.01
@@ -345,8 +345,8 @@ def test_correlation_matrix(a):
 
 
 @pytest.mark.parametrize(
-    'name',
-    ['flatten', 'fold', 'hist', 'cumsum', 'max', 'squeeze', 'astype', 'round'],
+    "name",
+    ["flatten", "fold", "hist", "cumsum", "max", "squeeze", "astype", "round"],
 )
 def test_unsupported_operations_raise(a, name):
     with pytest.raises(CovarianceError):
@@ -367,8 +367,8 @@ def test_every_inherited_variable_method_is_accounted_for():
     missing = [
         name
         for name in dir(sc.Variable)
-        if not name.startswith('_')
-        and name not in ('plot', 'underlying_size')
+        if not name.startswith("_")
+        and name not in ("plot", "underlying_size")
         and not isinstance(inspect.getattr_static(sc.Variable, name), property)
         and callable(getattr(sc.Variable, name, None))
         and name not in vars(CovVariable)
@@ -380,25 +380,25 @@ def test_every_inherited_variable_method_is_accounted_for():
 
 
 def test_data_group_preserves_the_subclass(a):
-    dg = sc.DataGroup({'a': a})
-    assert dg['a'] is a
+    dg = sc.DataGroup({"a": a})
+    assert dg["a"] is a
     # DataGroup methods dispatch to the item's method, so overrides are used.
-    assert isinstance(dg.sum('x')['a'], CovVariable)
-    assert isinstance(dg.mean('x')['a'], CovVariable)
-    assert isinstance(dg['x', 0:2]['a'], CovVariable)
-    assert isinstance(dg.copy()['a'], CovVariable)
-    assert isinstance((dg + dg)['a'], CovVariable)
+    assert isinstance(dg.sum("x")["a"], CovVariable)
+    assert isinstance(dg.mean("x")["a"], CovVariable)
+    assert isinstance(dg["x", 0:2]["a"], CovVariable)
+    assert isinstance(dg.copy()["a"], CovVariable)
+    assert isinstance((dg + dg)["a"], CovVariable)
 
 
 def test_free_functions_on_a_data_group_still_strip(a):
     """data_group_nary calls the scipp *free* function on each item."""
-    dg = sc.DataGroup({'a': a})
-    assert type(sc.sum(dg)['a']) is sc.Variable
+    dg = sc.DataGroup({"a": a})
+    assert type(sc.sum(dg)["a"]) is sc.Variable
 
 
 def test_free_functions_silently_degrade_to_plain_variable(a):
     """Documents the known escape hatch: C++ free functions bypass the subclass."""
-    result = sc.sum(a, 'x')
+    result = sc.sum(a, "x")
     assert type(result) is sc.Variable
     # Marginals stay correct because of the diag invariant, correlations are lost.
     assert float(result.variance) == pytest.approx(np.trace(COV3))
@@ -419,9 +419,9 @@ def test_a_data_array_inside_a_data_group_still_strips(a):
     because DataGroup preserves the subclass -- but the DataArray has already
     dropped it by then.
     """
-    dg = sc.DataGroup({'x': sc.DataArray(data=a)})
-    assert type(dg['x'].data) is sc.Variable
-    assert isinstance(sc.DataGroup({'x': a})['x'], CovVariable)
+    dg = sc.DataGroup({"x": sc.DataArray(data=a)})
+    assert type(dg["x"].data) is sc.Variable
+    assert isinstance(sc.DataGroup({"x": a})["x"], CovVariable)
 
 
 def test_covariance_cannot_ride_along_as_a_coord(a):
@@ -431,16 +431,16 @@ def test_covariance_cannot_ride_along_as_a_coord(a):
     neither as data nor as metadata.
     """
     with pytest.raises(sc.DimensionError):
-        sc.DataArray(data=a.to_variable(), coords={'cov': a.covariance})
+        sc.DataArray(data=a.to_variable(), coords={"cov": a.covariance})
 
 
 def test_nested_data_group_is_the_working_container(a):
     """The DataArray-shaped alternative that does preserve the covariance."""
-    coord = sc.arange('x', 3.0)
-    dg = sc.DataGroup({'item': sc.DataGroup({'data': a, 'x': coord})})
-    assert isinstance(dg['item']['data'], CovVariable)
+    coord = sc.arange("x", 3.0)
+    dg = sc.DataGroup({"item": sc.DataGroup({"data": a, "x": coord})})
+    assert isinstance(dg["item"]["data"], CovVariable)
     # and it still slices as a unit
-    assert isinstance(dg['x', 0:2]['item']['data'], CovVariable)
+    assert isinstance(dg["x", 0:2]["item"]["data"], CovVariable)
 
 
 # -- in-place operators must not leave a stale covariance ------------------
@@ -452,13 +452,13 @@ def test_in_place_operators_keep_the_invariant(a):
     That left `_covariance` stale -- `a -= a` gave zero values but non-zero
     variances. The overrides rebind instead.
     """
-    for op in ('__iadd__', '__isub__', '__imul__', '__itruediv__'):
-        x = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
+    for op in ("__iadd__", "__isub__", "__imul__", "__itruediv__"):
+        x = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
         rhs = (
             sc.scalar(2.0)
-            if op in ('__imul__', '__itruediv__')
+            if op in ("__imul__", "__itruediv__")
             else covariance_array(
-                dims=['x'], values=[1.0, 1.0], covariance=COV2, unit='m'
+                dims=["x"], values=[1.0, 1.0], covariance=COV2, unit="m"
             )
         )
         result = getattr(x, op)(rhs)
@@ -475,14 +475,14 @@ def test_self_subtraction_in_place_is_exactly_zero(a):
 
 
 def test_abs_propagates_the_covariance():
-    a = covariance_array(dims=['x'], values=[-1.0, 2.0], covariance=COV2, unit='m')
+    a = covariance_array(dims=["x"], values=[-1.0, 2.0], covariance=COV2, unit="m")
     result = abs(a)
     np.testing.assert_allclose(result.values, [1.0, 2.0])
     signs = np.array([-1.0, 1.0])
     np.testing.assert_allclose(cov_matrix(result), np.outer(signs, signs) * COV2)
 
 
-@pytest.mark.parametrize('op', ['__floordiv__', '__mod__', '__invert__'])
+@pytest.mark.parametrize("op", ["__floordiv__", "__mod__", "__invert__"])
 def test_operators_without_covariance_meaning_raise(a, op):
     with pytest.raises(CovarianceError):
         getattr(a, op)(a)
@@ -505,39 +505,39 @@ def dispatch():
 
 
 def test_free_functions_strip_without_dispatch(a):
-    dg = sc.DataGroup({'a': a})
-    assert type(sc.sum(dg, 'x')['a']) is sc.Variable
+    dg = sc.DataGroup({"a": a})
+    assert type(sc.sum(dg, "x")["a"]) is sc.Variable
 
 
-@pytest.mark.usefixtures('dispatch')
+@pytest.mark.usefixtures("dispatch")
 def test_free_functions_dispatch_inside_a_data_group():
-    a = covariance_array(dims=['x'], values=[1.0, 2.0], covariance=COV2, unit='m')
-    dg = sc.DataGroup({'a': a})
-    total = sc.sum(dg, 'x')['a']
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    dg = sc.DataGroup({"a": a})
+    total = sc.sum(dg, "x")["a"]
     assert isinstance(total, CovVariable)
     assert float(total.variance) == pytest.approx(COV2.sum())
-    assert isinstance(sc.mean(dg, 'x')['a'], CovVariable)
-    assert isinstance(sc.abs(dg)['a'], CovVariable)
-    assert isinstance(sc.concat([dg, dg], 'x')['a'], CovVariable)
+    assert isinstance(sc.mean(dg, "x")["a"], CovVariable)
+    assert isinstance(sc.abs(dg)["a"], CovVariable)
+    assert isinstance(sc.concat([dg, dg], "x")["a"], CovVariable)
 
 
-@pytest.mark.usefixtures('dispatch')
+@pytest.mark.usefixtures("dispatch")
 def test_free_functions_dispatch_directly(a):
-    assert isinstance(sc.sum(a, 'x'), CovVariable)
-    assert float(sc.sum(a, 'x').variance) == pytest.approx(COV3.sum())
+    assert isinstance(sc.sum(a, "x"), CovVariable)
+    assert float(sc.sum(a, "x").variance) == pytest.approx(COV3.sum())
 
 
-@pytest.mark.usefixtures('dispatch')
+@pytest.mark.usefixtures("dispatch")
 def test_lossy_free_functions_raise(a):
     with pytest.raises(CovarianceError):
         sc.max(a)
     with pytest.raises(CovarianceError):
-        sc.max(sc.DataGroup({'a': a}))
+        sc.max(sc.DataGroup({"a": a}))
 
 
-@pytest.mark.usefixtures('dispatch')
+@pytest.mark.usefixtures("dispatch")
 def test_dispatch_leaves_plain_variables_alone():
-    v = sc.array(dims=['x'], values=[1.0, 2.0, 3.0])
+    v = sc.array(dims=["x"], values=[1.0, 2.0, 3.0])
     assert float(sc.sum(v).value) == pytest.approx(6.0)
     assert type(sc.sum(v)) is sc.Variable
     assert float(sc.max(v).value) == pytest.approx(3.0)
@@ -546,4 +546,4 @@ def test_dispatch_leaves_plain_variables_alone():
 def test_uninstall_dispatch_restores_scipp(a):
     install_dispatch()
     uninstall_dispatch()
-    assert type(sc.sum(sc.DataGroup({'a': a}), 'x')['a']) is sc.Variable
+    assert type(sc.sum(sc.DataGroup({"a": a}), "x")["a"]) is sc.Variable
