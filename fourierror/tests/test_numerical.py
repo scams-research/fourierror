@@ -29,13 +29,16 @@ class TestNumericalDft(unittest.TestCase):
     def test_without_errors(self):
         f = numerical.dft(data=DATA, coord="x")
         assert list(f.keys()) == ["real", "imag"]
-        assert list(f.coords.keys()) == ["omega"]
-        assert f.coords["omega"].unit == sc.Unit("1/rad")
+        assert list(f['real'].coords.keys()) == ["omega"]
+        assert f['real'].coords["omega"].unit == sc.Unit("1/rad")
+        assert list(f['imag'].coords.keys()) == ["omega"]
+        assert f['imag'].coords["omega"].unit == sc.Unit("1/rad")
         np_result = np.fft.fft(Y.values)
         np.allclose(np_result.real, f["real"].values)
         np.allclose(np_result.imag, f["imag"].values)
         npf_result = np.fft.fftfreq(Y.values.size, 1 / (X[1].value - X[0].value))
-        np.allclose(npf_result, f.coords["omega"].values)
+        np.allclose(npf_result, f['real'].coords["omega"].values)
+        np.allclose(npf_result, f['imag'].coords["omega"].values)
 
 
 class TestNumericalFft(unittest.TestCase):
@@ -46,13 +49,16 @@ class TestNumericalFft(unittest.TestCase):
     def test_without_errors(self):
         f = numerical.fft(data=DATA, coord="x")
         assert list(f.keys()) == ["real", "imag"]
-        assert list(f.coords.keys()) == ["omega"]
-        assert f.coords["omega"].unit == sc.Unit("1/rad")
+        assert list(f['real'].coords.keys()) == ["omega"]
+        assert f['real'].coords["omega"].unit == sc.Unit("1/rad")
+        assert list(f['imag'].coords.keys()) == ["omega"]
+        assert f['imag'].coords["omega"].unit == sc.Unit("1/rad")
         np_result = np.fft.fft(Y.values)
         np.allclose(np_result.real, f["real"].values)
         np.allclose(np_result.imag, f["imag"].values)
         npf_result = np.fft.fftfreq(Y.values.size, 1 / (X[1].value - X[0].value))
-        np.allclose(npf_result, f.coords["omega"].values)
+        np.allclose(npf_result, f['real'].coords["omega"].values)
+        np.allclose(npf_result, f['imag'].coords["omega"].values)
 
 
 class TestComparison(unittest.TestCase):

@@ -2,6 +2,8 @@ import numpy as np
 import scipp as sc
 
 from .freq import frequencies
+from .variable import CovVariable
+from .data_array import CovDataArray
 
 
 def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
@@ -18,7 +20,10 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     """
     freq = frequencies(data, coord)
 
-    cov = np.diag(data.variances)
+    if hasattr(data.data, 'covariance'):
+        cov = data.data.covariance.values
+    else:
+        cov = np.diag(data.variances)
 
     theta = (
         -2
@@ -41,10 +46,11 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     var_imag = sin @ cov @ sin.T
 
     f_real = f.real
-    real = sc.array(dims=["omega"], values=f_real, variances=np.diag(var_real))
+    real = CovVariable(dims=["omega"], values=f_real, covariance=var_real)
 
     f_imag = f.imag
-    imag = sc.array(dims=["omega"], values=f_imag, variances=np.diag(var_imag))
+    imag = CovVariable(dims=["omega"], values=f_imag, covariance=var_imag)
     # same as f_real but extracts the imaginary part
 
-    return sc.Dataset({"real": real, "imag": imag}, coords={"omega": freq})
+    return sc.DataGroup({"real": CovDataArray(data=real, coords={'omega': freq}), 
+                         "imag": CovDataArray(data=imag, coords={'omega': freq})})
