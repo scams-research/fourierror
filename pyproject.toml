@@ -44,7 +44,8 @@ docs = [
     'nbsphinx',
     'sphinx_autodoc_typehints',
     'pydata_sphinx_theme',
-    'myst_parser'
+    'myst_parser',
+    'matplotlib'
 ]
 
 [tool.coverage.run]
