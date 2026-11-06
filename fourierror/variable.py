@@ -1,20 +1,4 @@
-# SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
-"""Reference prototype of a ``scipp.Variable`` subclass carrying a full covariance.
-
-This module is a *proposal prototype*, not part of the public scipp API.  See the
-accompanying ``README.md`` for the design rationale and for the limits of the
-approach.
-
-The central invariant is::
-
-    self.variances == diag(self.covariance)
-
-The subclass keeps the inherited C++ ``variances`` buffer populated with the
-diagonal of the covariance matrix at all times.  Any code path that falls
-through to C++ therefore still sees *correct marginal variances*; it only loses
-the off-diagonal correlations.  Operations that cannot propagate a covariance
-raise instead of silently degrading, in the spirit of ADR 0015.
+"""A ``scipp.Variable`` subclass carrying a full covariance.
 """
 
 from __future__ import annotations
@@ -31,13 +15,15 @@ from scipp.core.data_group import apply_to_items as _apply_to_items
 from scipp.core.data_group import data_group_nary as _data_group_nary
 
 __all__ = [
-    "CovVariable",
-    "CovarianceError",
-    "concat",
-    "covariance_array",
-    "covariance_scalar",
-    "install_dispatch",
-    "uninstall_dispatch",
+    'CovVariable',
+    'CovarianceError',
+    'concat',
+    'covariance_array',
+    'covariance_scalar',
+    'install_dispatch',
+    'install_operand_deferral',
+    'uninstall_dispatch',
+    'uninstall_operand_deferral',
 ]
 
 #: Suffix used to build the "mirror" dimension labels of the covariance matrix.
@@ -46,7 +32,7 @@ __all__ = [
 #: two index axes of the matrix must be named differently.
 MIRROR = "'"
 
-_RAD = sc.scalar(1.0, unit="rad")
+_RAD = sc.scalar(1.0, unit='rad')
 
 
 class CovarianceError(RuntimeError):
@@ -193,7 +179,7 @@ class CovVariable(sc.Variable):
             values=values,
             variances=variances,
             unit=unit,
-            **({} if dtype is None else {"dtype": dtype}),
+            **({} if dtype is None else {'dtype': dtype}),
         )
         self._covariance = cov
 
@@ -274,12 +260,12 @@ class CovVariable(sc.Variable):
         cov = _matrix(self._covariance, n)
         sigma = np.sqrt(np.diag(cov))
         outer = np.outer(sigma, sigma)
-        with np.errstate(invalid="ignore", divide="ignore"):
+        with np.errstate(invalid='ignore', divide='ignore'):
             corr = np.where(outer == 0.0, 0.0, cov / outer)
         return sc.array(
             dims=list(self._covariance.dims),
             values=corr.reshape(self._covariance.shape),
-            unit="dimensionless",
+            unit='dimensionless',
         )
 
     @property
@@ -307,7 +293,7 @@ class CovVariable(sc.Variable):
         )
 
     def __repr__(self) -> str:
-        base = sc.Variable.__repr__(self).split("> ", 1)[1]
+        base = sc.Variable.__repr__(self).split('> ', 1)[1]
         corr = np.array2string(_matrix(self.correlation, self._n), precision=3)
         return f"<CovVariable> {base}\n  correlation:\n{corr}"
 
@@ -424,7 +410,7 @@ class CovVariable(sc.Variable):
         sign = sc.array(
             dims=list(values.dims),
             values=np.sign(np.asarray(values.values)),
-            unit="dimensionless",
+            unit='dimensionless',
         )
         return self._chain(sc.abs(values), sign)
 
@@ -542,7 +528,7 @@ class CovVariable(sc.Variable):
         # The Jacobian of a broadcast is a 0/1 selection matrix; through the
         # sandwich it is just a broadcast of ones.
         ones = sc.ones(
-            dims=list(sizes), shape=list(sizes.values()), unit="dimensionless"
+            dims=list(sizes), shape=list(sizes.values()), unit='dimensionless'
         )
         return self._wrap(base, self._sandwich(ones, self._covariance))
 
@@ -570,7 +556,7 @@ class CovVariable(sc.Variable):
 
 #: Inherited methods safe to leave alone: they do not produce a derived
 #: variable whose correlations could be lost.
-_SAFE_INHERITED = frozenset({"plot", "underlying_size"})
+_SAFE_INHERITED = frozenset({'plot', 'underlying_size'})
 
 
 def _unsupported_method(name: str) -> Any:
@@ -581,7 +567,7 @@ def _unsupported_method(name: str) -> Any:
         )
 
     fail.__name__ = name
-    fail.__qualname__ = f"CovVariable.{name}"
+    fail.__qualname__ = f'CovVariable.{name}'
     return fail
 
 
@@ -601,7 +587,7 @@ def _install_unsupported_stubs() -> None:
     them (``bins``, ``dims``) while dispatching.
     """
     for name in dir(sc.Variable):
-        if name.startswith("_") or name in _SAFE_INHERITED:
+        if name.startswith('_') or name in _SAFE_INHERITED:
             continue
         if name in vars(CovVariable):
             continue
@@ -625,14 +611,14 @@ def _as_operand(other: Any) -> sc.Variable:
         return other.to_variable()
     if isinstance(other, sc.Variable):
         return other
-    return sc.scalar(float(other), unit="dimensionless")
+    return sc.scalar(float(other), unit='dimensionless')
 
 
 def _unit_derivative(lhs: sc.Variable, rhs: sc.Variable) -> sc.Variable:
     """A derivative of 1, shaped so the sandwich reaches all output dims."""
     sizes = {**dict(lhs.sizes), **dict(rhs.sizes)}
     _check_dim_labels(sizes)
-    return sc.ones(dims=list(sizes), shape=list(sizes.values()), unit="dimensionless")
+    return sc.ones(dims=list(sizes), shape=list(sizes.values()), unit='dimensionless')
 
 
 def _normalize_index(var: sc.Variable, key: Any) -> tuple[str, Any]:
@@ -701,19 +687,19 @@ def concat(variables: Sequence[CovVariable], dim: str) -> CovVariable:
 #: absent: they return boolean variables, which carry no uncertainty, so
 #: degrading to a plain ``Variable`` there is correct.
 for _op in (
-    "__floordiv__",
-    "__rfloordiv__",
-    "__ifloordiv__",
-    "__mod__",
-    "__rmod__",
-    "__imod__",
-    "__and__",
-    "__or__",
-    "__xor__",
-    "__iand__",
-    "__ior__",
-    "__ixor__",
-    "__invert__",
+    '__floordiv__',
+    '__rfloordiv__',
+    '__ifloordiv__',
+    '__mod__',
+    '__rmod__',
+    '__imod__',
+    '__and__',
+    '__or__',
+    '__xor__',
+    '__iand__',
+    '__ior__',
+    '__ixor__',
+    '__invert__',
 ):
     setattr(CovVariable, _op, _unsupported_method(_op))
 del _op
@@ -725,51 +711,51 @@ del _op
 
 #: Free functions with a covariance-aware equivalent, as name -> implementation.
 _AWARE: dict[str, Any] = {
-    "abs": lambda x: abs(x),
-    "concat": lambda x, dim: concat(x, dim),
-    "cos": lambda x: x.cos(),
-    "exp": lambda x: x.exp(),
-    "log": lambda x: x.log(),
-    "mean": lambda x, dim=None: x.mean(dim),
-    "negative": lambda x: -x,
-    "reciprocal": lambda x: 1.0 / x,
-    "sin": lambda x: x.sin(),
-    "sqrt": lambda x: x.sqrt(),
-    "sum": lambda x, dim=None: x.sum(dim),
-    "to_unit": lambda x, unit, **_: x.to(unit=unit),
-    "transpose": lambda x, dims=None: x.transpose(dims),
+    'abs': lambda x: abs(x),
+    'concat': lambda x, dim: concat(x, dim),
+    'cos': lambda x: x.cos(),
+    'exp': lambda x: x.exp(),
+    'log': lambda x: x.log(),
+    'mean': lambda x, dim=None: x.mean(dim),
+    'negative': lambda x: -x,
+    'reciprocal': lambda x: 1.0 / x,
+    'sin': lambda x: x.sin(),
+    'sqrt': lambda x: x.sqrt(),
+    'sum': lambda x, dim=None: x.sum(dim),
+    'to_unit': lambda x, unit, **_: x.to(unit=unit),
+    'transpose': lambda x, dims=None: x.transpose(dims),
 }
 
 #: Free functions that cannot propagate a covariance and must refuse rather
 #: than quietly return a plain ``Variable``.
 _LOSSY = (
-    "all",
-    "any",
-    "astype",
-    "bin",
-    "ceil",
-    "cumsum",
-    "flatten",
-    "floor",
-    "fold",
-    "hist",
-    "max",
-    "median",
-    "min",
-    "nanhist",
-    "nanmax",
-    "nanmean",
-    "nanmedian",
-    "nanmin",
-    "nanstd",
-    "nansum",
-    "nanvar",
-    "rebin",
-    "round",
-    "sort",
-    "squeeze",
-    "std",
-    "var",
+    'all',
+    'any',
+    'astype',
+    'bin',
+    'ceil',
+    'cumsum',
+    'flatten',
+    'floor',
+    'fold',
+    'hist',
+    'max',
+    'median',
+    'min',
+    'nanhist',
+    'nanmax',
+    'nanmean',
+    'nanmedian',
+    'nanmin',
+    'nanstd',
+    'nansum',
+    'nanvar',
+    'rebin',
+    'round',
+    'sort',
+    'squeeze',
+    'std',
+    'var',
 )
 
 _ORIGINAL_FUNCTIONS: dict[str, Any] = {}
@@ -781,7 +767,7 @@ def _contains_covariance(obj: Any, _depth: int = 0) -> bool:
     Duck-typed on ``_covariance`` so that ``CovDataArray`` is recognised
     without importing it (that module imports this one).
     """
-    if isinstance(obj, sc.Variable | sc.DataArray) and hasattr(obj, "_covariance"):
+    if isinstance(obj, sc.Variable | sc.DataArray) and hasattr(obj, '_covariance'):
         return True
     if _depth > 3:
         return False
@@ -801,7 +787,7 @@ def _make_dispatcher(name: str, original: Any, target: Any) -> Any:
         # data_group_nary (call_func in core/_cpp_wrapper_util.py), so the
         # per-item call would never reach this class.
         if (
-            name == "concat"
+            name == 'concat'
             and args
             and isinstance(args[0], list | tuple)
             and any(isinstance(v, sc.DataGroup) for v in args[0])
@@ -844,10 +830,80 @@ def install_dispatch() -> None:
             continue
         _ORIGINAL_FUNCTIONS[name] = original
         setattr(sc, name, _make_dispatcher(name, original, _AWARE.get(name)))
+    install_operand_deferral()
 
 
 def uninstall_dispatch() -> None:
-    """Undo :func:`install_dispatch`."""
+    """Undo :func:`install_dispatch`.
+
+    Leaves the operand deferral in place; that is a correctness fix installed
+    at import, not part of the opt-in free-function patching. Use
+    :func:`uninstall_operand_deferral` to undo it too.
+    """
     for name, original in _ORIGINAL_FUNCTIONS.items():
         setattr(sc, name, original)
     _ORIGINAL_FUNCTIONS.clear()
+
+
+def uninstall_operand_deferral() -> None:
+    """Restore scipp's own arithmetic operators.
+
+    Only for callers who need scipp's operator slots pristine. Afterwards
+    ``plain_variable * cov_data_array`` silently drops the covariance again.
+    """
+    for (cls, name), original in _ORIGINAL_OPERATORS.items():
+        setattr(cls, name, original)
+    _ORIGINAL_OPERATORS.clear()
+
+
+#: Arithmetic operators whose left operand may be a plain scipp object while the
+#: right one carries a covariance.
+_ARITHMETIC_DUNDERS = (
+    '__add__',
+    '__sub__',
+    '__mul__',
+    '__truediv__',
+    '__floordiv__',
+    '__mod__',
+    '__pow__',
+)
+
+_ORIGINAL_OPERATORS: dict[tuple[type, str], Any] = {}
+
+
+def _make_deferring_operator(original: Any) -> Any:
+    @functools.wraps(original)
+    def wrapper(self: Any, other: Any) -> Any:
+        if hasattr(other, '_covariance'):
+            # Hand the operation to the covariance-carrying operand's reflected
+            # method. Python only does this automatically when the right operand
+            # is a *subclass* of the left one's type, which is not the case for
+            # `Variable * CovDataArray`: Variable.__mul__ has a DataArray
+            # overload, so it would succeed and silently drop the covariance.
+            return NotImplemented
+        return original(self, other)
+
+    return wrapper
+
+
+def install_operand_deferral() -> None:
+    """Make plain scipp objects defer to a covariance-carrying right operand.
+
+    Installed automatically when ``covariance_data_array`` is imported, because
+    without it ``plain_variable * cov_data_array`` silently returns a plain
+    ``DataArray``: ``CovDataArray`` subclasses ``DataArray`` but not
+    ``Variable``, so Python grants it no reflected-operand priority, and
+    ``Variable.__mul__``'s ``DataArray`` overload wins outright. A fix for
+    silently wrong numbers should not be opt-in.
+
+    Narrow by construction: the wrappers change behaviour only when the right
+    operand carries a ``_covariance``, so plain scipp arithmetic is untouched.
+    Idempotent.
+    """
+    for cls in (sc.Variable, sc.DataArray, sc.Dataset):
+        for name in _ARITHMETIC_DUNDERS:
+            original = getattr(cls, name, None)
+            if original is None or (cls, name) in _ORIGINAL_OPERATORS:
+                continue
+            _ORIGINAL_OPERATORS[(cls, name)] = original
+            setattr(cls, name, _make_deferring_operator(original))

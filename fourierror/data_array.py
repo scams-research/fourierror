@@ -1,16 +1,4 @@
-# SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
-"""A ``scipp.DataArray`` subclass that carries a :class:`CovVariable`.
-
-``sc.DataArray`` stores its data as a C++ ``std::shared_ptr<Variable>``
-(``lib/dataset/include/scipp/dataset/data_array.h:105``), so a
-``CovVariable`` put into one is stripped on insertion. This subclass
-works around that the same way :class:`CovVariable` works around
-``Variable``: the C++ side keeps values and variances, the covariance lives in
-the Python instance, and ``.data`` reassembles the two on access.
-
-Coords and masks are ordinary variables and are handled by the base class
-unchanged.
+"""A ``scipp.DataArray`` subclass that carries a :class:`CovDataArray`. 
 """
 
 from __future__ import annotations
@@ -27,11 +15,12 @@ from .variable import (
     _cov_dims,
     _matrix,
     _values_only,
+    install_operand_deferral,
 )
 
 import scipp as sc
 
-__all__ = ["CovDataArray", "covariance_data_array"]
+__all__ = ['CovDataArray', 'data_array']
 
 
 def _plain_data(obj: Any) -> Any:
@@ -112,7 +101,7 @@ class CovDataArray(sc.DataArray):
         data: sc.Variable,
         coords: Mapping[str, sc.Variable] | None = None,
         masks: Mapping[str, sc.Variable] | None = None,
-        name: str = "",
+        name: str = '',
         covariance: Any = None,
     ) -> None:
         if covariance is not None:
@@ -234,25 +223,30 @@ class CovDataArray(sc.DataArray):
         return type(self)._from_base(base, data.covariance)
 
     def __add__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__add__")
+        return self._binary(other, '__add__')
 
     def __radd__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__add__")
+        return self._binary(other, '__add__')
 
     def __sub__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__sub__")
+        return self._binary(other, '__sub__')
 
     def __rsub__(self, other: Any) -> CovDataArray:
         return (-self).__add__(other)
 
     def __mul__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__mul__")
+        return self._binary(other, '__mul__')
 
     def __rmul__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__mul__")
+        return self._binary(other, '__mul__')
 
     def __truediv__(self, other: Any) -> CovDataArray:
-        return self._binary(other, "__truediv__")
+        return self._binary(other, '__truediv__')
+
+    def __rtruediv__(self, other: Any) -> CovDataArray:
+        base = _plain_data(other) / self.to_data_array()
+        data = self.data.__rtruediv__(_covariance_data(other))
+        return type(self)._from_base(base, data.covariance)
 
     def __neg__(self) -> CovDataArray:
         return type(self)._from_base(-self.to_data_array(), self.covariance)
@@ -280,10 +274,10 @@ class CovDataArray(sc.DataArray):
     # -- reductions ----------------------------------------------------------
 
     def sum(self, dim: Any = None) -> CovDataArray:
-        return self._reduce("sum", dim)
+        return self._reduce('sum', dim)
 
     def mean(self, dim: Any = None) -> CovDataArray:
-        return self._reduce("mean", dim)
+        return self._reduce('mean', dim)
 
     def _reduce(self, name: str, dim: Any) -> CovDataArray:
         plain = self.to_data_array()
@@ -347,14 +341,14 @@ class CovDataArray(sc.DataArray):
 #: plain view that carries no correlations by design.
 _SAFE_INHERITED = frozenset(
     {
-        "plot",
-        "underlying_size",
-        "drop_coords",
-        "drop_masks",
-        "assign_coords",
-        "assign_masks",
-        "rename",
-        "rename_dims",
+        'plot',
+        'underlying_size',
+        'drop_coords',
+        'drop_masks',
+        'assign_coords',
+        'assign_masks',
+        'rename',
+        'rename_dims',
     }
 )
 
@@ -367,7 +361,7 @@ def _unsupported_method(name: str) -> Any:
         )
 
     fail.__name__ = name
-    fail.__qualname__ = f"CovDataArray.{name}"
+    fail.__qualname__ = f'CovDataArray.{name}'
     return fail
 
 
@@ -378,7 +372,7 @@ def _install_unsupported_stubs() -> None:
     anything omitted degrade silently to a plain ``DataArray``.
     """
     for name in dir(sc.DataArray):
-        if name.startswith("_") or name in _SAFE_INHERITED:
+        if name.startswith('_') or name in _SAFE_INHERITED:
             continue
         if name in vars(CovDataArray):
             continue
@@ -391,7 +385,7 @@ def _install_unsupported_stubs() -> None:
 
 _install_unsupported_stubs()
 
-for _op in ("__floordiv__", "__mod__", "__and__", "__or__", "__xor__"):
+for _op in ('__floordiv__', '__mod__', '__and__', '__or__', '__xor__'):
     setattr(CovDataArray, _op, _unsupported_method(_op))
 del _op
 
@@ -400,3 +394,10 @@ del _op
 def covariance_data_array(*args: Any, **kwargs: Any) -> CovDataArray:
     """Create a :class:`CovDataArray`."""
     return CovDataArray(*args, **kwargs)
+
+
+# Installed on import, not behind install_dispatch(): without it
+# `plain_variable * cov_data_array` silently returns a plain DataArray, and a
+# fix for silently wrong numbers should not depend on an opt-in call. See
+# install_operand_deferral for why Python's own dispatch does not cover this.
+install_operand_deferral()

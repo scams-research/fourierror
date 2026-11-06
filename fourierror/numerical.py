@@ -19,7 +19,7 @@ def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
         cov = data.data.covariance.values
     else:
         cov = np.diag(data.variances)
-    return multivariate_normal(mean=data.values, cov=cov)
+    return multivariate_normal(mean=data.values, cov=cov, allow_singular=True)
 
 
 def _construct_real_imag_arrays(f_samples: np.ndarray) -> tuple[sc.DataArray]:
