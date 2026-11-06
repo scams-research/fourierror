@@ -1,5 +1,4 @@
-"""A ``scipp.DataArray`` subclass that carries a :class:`CovDataArray`. 
-"""
+"""A ``scipp.DataArray`` subclass that carries a :class:`CovDataArray`."""
 
 from __future__ import annotations
 
@@ -20,7 +19,7 @@ from .variable import (
 
 import scipp as sc
 
-__all__ = ['CovDataArray', 'data_array']
+__all__ = ["CovDataArray", "data_array"]
 
 
 def _plain_data(obj: Any) -> Any:
@@ -101,7 +100,7 @@ class CovDataArray(sc.DataArray):
         data: sc.Variable,
         coords: Mapping[str, sc.Variable] | None = None,
         masks: Mapping[str, sc.Variable] | None = None,
-        name: str = '',
+        name: str = "",
         covariance: Any = None,
     ) -> None:
         if covariance is not None:
@@ -223,25 +222,25 @@ class CovDataArray(sc.DataArray):
         return type(self)._from_base(base, data.covariance)
 
     def __add__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__add__')
+        return self._binary(other, "__add__")
 
     def __radd__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__add__')
+        return self._binary(other, "__add__")
 
     def __sub__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__sub__')
+        return self._binary(other, "__sub__")
 
     def __rsub__(self, other: Any) -> CovDataArray:
         return (-self).__add__(other)
 
     def __mul__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__mul__')
+        return self._binary(other, "__mul__")
 
     def __rmul__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__mul__')
+        return self._binary(other, "__mul__")
 
     def __truediv__(self, other: Any) -> CovDataArray:
-        return self._binary(other, '__truediv__')
+        return self._binary(other, "__truediv__")
 
     def __rtruediv__(self, other: Any) -> CovDataArray:
         base = _plain_data(other) / self.to_data_array()
@@ -274,10 +273,10 @@ class CovDataArray(sc.DataArray):
     # -- reductions ----------------------------------------------------------
 
     def sum(self, dim: Any = None) -> CovDataArray:
-        return self._reduce('sum', dim)
+        return self._reduce("sum", dim)
 
     def mean(self, dim: Any = None) -> CovDataArray:
-        return self._reduce('mean', dim)
+        return self._reduce("mean", dim)
 
     def _reduce(self, name: str, dim: Any) -> CovDataArray:
         plain = self.to_data_array()
@@ -341,14 +340,14 @@ class CovDataArray(sc.DataArray):
 #: plain view that carries no correlations by design.
 _SAFE_INHERITED = frozenset(
     {
-        'plot',
-        'underlying_size',
-        'drop_coords',
-        'drop_masks',
-        'assign_coords',
-        'assign_masks',
-        'rename',
-        'rename_dims',
+        "plot",
+        "underlying_size",
+        "drop_coords",
+        "drop_masks",
+        "assign_coords",
+        "assign_masks",
+        "rename",
+        "rename_dims",
     }
 )
 
@@ -361,7 +360,7 @@ def _unsupported_method(name: str) -> Any:
         )
 
     fail.__name__ = name
-    fail.__qualname__ = f'CovDataArray.{name}'
+    fail.__qualname__ = f"CovDataArray.{name}"
     return fail
 
 
@@ -372,7 +371,7 @@ def _install_unsupported_stubs() -> None:
     anything omitted degrade silently to a plain ``DataArray``.
     """
     for name in dir(sc.DataArray):
-        if name.startswith('_') or name in _SAFE_INHERITED:
+        if name.startswith("_") or name in _SAFE_INHERITED:
             continue
         if name in vars(CovDataArray):
             continue
@@ -385,7 +384,7 @@ def _install_unsupported_stubs() -> None:
 
 _install_unsupported_stubs()
 
-for _op in ('__floordiv__', '__mod__', '__and__', '__or__', '__xor__'):
+for _op in ("__floordiv__", "__mod__", "__and__", "__or__", "__xor__"):
     setattr(CovDataArray, _op, _unsupported_method(_op))
 del _op
 

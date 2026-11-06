@@ -39,6 +39,7 @@ class TestAnalyticalDft(unittest.TestCase):
         np.allclose(npf_result, f["real"].coords["omega"].values)
         np.allclose(npf_result, f["imag"].coords["omega"].values)
 
+
 class TestAnalyticalFft(unittest.TestCase):
     """
     Tests for the numerical dft methods

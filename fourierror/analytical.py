@@ -57,7 +57,7 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     )
 
 
-def fft(data: sc.DataArray, coord: str) -> sc.DataGroup: 
+def fft(data: sc.DataArray, coord: str) -> sc.DataGroup:
     """
     Performs an analytical Fast Fourier transform.
 
@@ -84,10 +84,10 @@ def fft(data: sc.DataArray, coord: str) -> sc.DataGroup:
 
     var_real = scale * (p.real + q.real) / 2
     var_imag = scale * (q.real - p.real) / 2
- 
+
     real = CovVariable(dims=["omega"], values=f.real, covariance=var_real)
     imag = CovVariable(dims=["omega"], values=f.imag, covariance=var_imag)
- 
+
     return sc.DataGroup(
         {
             "real": CovDataArray(data=real, coords={"omega": freq}),
