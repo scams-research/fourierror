@@ -19,7 +19,7 @@ from .variable import (
 
 import scipp as sc
 
-__all__ = ["CovDataArray", "data_array"]
+__all__ = ["CovDataArray", "covariance_data_array"]
 
 
 def _plain_data(obj: Any) -> Any:
