@@ -4,7 +4,7 @@ from scipy.stats import multivariate_normal
 
 from .freq import frequencies
 from .variable import CovVariable
-from .data_array import CovDataArray
+from .utility import construct_output
 
 
 def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
@@ -43,6 +43,7 @@ def dft(
     coord: str,
     n_samples: int = 5_000,
     random_state: [None, int, np.random.Generator] = None,
+    diag_tol: float = 1e-12,
 ) -> sc.Dataset:
     """
     Perform a numerical discrete Fourier transform.
@@ -65,13 +66,13 @@ def dft(
         dft_matrix @ mv_norm.rvs(n_samples, random_state=random_state).T
     )
 
-    real, imag = _construct_real_imag_arrays(f_samples)
-
-    return sc.DataGroup(
-        {
-            "real": CovDataArray(data=real, coords={"omega": freq}),
-            "imag": CovDataArray(data=imag, coords={"omega": freq}),
-        }
+    return construct_output(
+        f_samples.real.mean(1),
+        f_samples.imag.mean(1),
+        np.cov(f_samples.real),
+        np.cov(f_samples.imag),
+        freq,
+        diag_tol=diag_tol,
     )
 
 
@@ -80,6 +81,7 @@ def fft(
     coord: str,
     n_samples: int = 5_000,
     random_state: [None, int, np.random.Generator] = None,
+    diag_tol: float = 1e-12,
 ) -> sc.Dataset:
     """
     Perform a numerical fast Fourier transform.
@@ -101,16 +103,16 @@ def fft(
         mv_norm.rvs(n_samples, random_state=random_state)
     ).T
 
-    real, imag = _construct_real_imag_arrays(f_samples)
-
     freq_array = np.fft.fftfreq(data.values.size, d[0].value) * 2 * np.pi
     freq = sc.array(
         dims=["omega"], values=freq_array, unit=(1 / data.coords[coord]).unit
     )
 
-    return sc.DataGroup(
-        {
-            "real": CovDataArray(data=real, coords={"omega": freq}),
-            "imag": CovDataArray(data=imag, coords={"omega": freq}),
-        }
+    return construct_output(
+        f_samples.real.mean(1),
+        f_samples.imag.mean(1),
+        np.cov(f_samples.real),
+        np.cov(f_samples.imag),
+        freq,
+        diag_tol=diag_tol,
     )

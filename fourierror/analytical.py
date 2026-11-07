@@ -2,11 +2,10 @@ import numpy as np
 import scipp as sc
 
 from .freq import frequencies
-from .variable import CovVariable
-from .data_array import CovDataArray
+from .utility import construct_output
 
 
-def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
+def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.Dataset:
     """
     Perform an analytical Fourier transform
 
@@ -42,22 +41,10 @@ def dft(data: sc.DataArray, coord: str) -> sc.Dataset:
     var_real = cos @ cov @ cos.T
     var_imag = sin @ cov @ sin.T
 
-    f_real = f.real
-    real = CovVariable(dims=["omega"], values=f_real, covariance=var_real)
-
-    f_imag = f.imag
-    imag = CovVariable(dims=["omega"], values=f_imag, covariance=var_imag)
-    # same as f_real but extracts the imaginary part
-
-    return sc.DataGroup(
-        {
-            "real": CovDataArray(data=real, coords={"omega": freq}),
-            "imag": CovDataArray(data=imag, coords={"omega": freq}),
-        }
-    )
+    return construct_output(f.real, f.imag, var_real, var_imag, freq, diag_tol=diag_tol)
 
 
-def fft(data: sc.DataArray, coord: str) -> sc.DataGroup:
+def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup:
     """
     Performs an analytical Fast Fourier transform.
 
@@ -85,12 +72,4 @@ def fft(data: sc.DataArray, coord: str) -> sc.DataGroup:
     var_real = scale * (p.real + q.real) / 2
     var_imag = scale * (q.real - p.real) / 2
 
-    real = CovVariable(dims=["omega"], values=f.real, covariance=var_real)
-    imag = CovVariable(dims=["omega"], values=f.imag, covariance=var_imag)
-
-    return sc.DataGroup(
-        {
-            "real": CovDataArray(data=real, coords={"omega": freq}),
-            "imag": CovDataArray(data=imag, coords={"omega": freq}),
-        }
-    )
+    return construct_output(f.real, f.imag, var_real, var_imag, freq, diag_tol=diag_tol)
