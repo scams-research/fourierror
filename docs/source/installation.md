@@ -10,7 +10,7 @@ $ pip install fourierror
 
 ## Bleeding-edge
 
-Alternatively, the latest development build can be installed from [GitHub](https://github.com/scams-research/fourierror), which can be installed directly from GitHub with `pip`:
+Alternatively, the latest development build can be installed directly from [GitHub](https://github.com/scams-research/fourierror) with `pip`:
 
 ```console
 $ pip install git+https://github.com/scams-research/fourierror.git
@@ -20,7 +20,7 @@ Note, that if you already have `fourierror` on your system, you may need to run 
 
 ## Development 
 
-If you are interesting in modifying the `fourierror` code, you should clone the git repository and install `fourierror` with the `dev` option in editable mode. 
+If you are interested in modifying the `fourierror` code, you should clone the git repository and install `fourierror` with the `dev` option in editable mode. 
 
 ```console
 $ git clone https://github.com/scams-research/fourierror.git
@@ -43,4 +43,4 @@ $ cd docs
 $ make html 
 ```
 
-For some more "developer friendly" documentation, we have used Deep Wiki to create [detailed documentation](https://deepwiki.com/scams-research/kinisi), including some very useful flow diagrams of the code construction. 
+For some more "developer friendly" documentation, we have used Deep Wiki to create [detailed documentation](https://deepwiki.com/scams-research/fourierror), including some very useful flow diagrams of the code construction. 

@@ -1,3 +1,10 @@
+"""Analytical propagation of uncertainty through the discrete Fourier transform.
+
+The covariance of the real and imaginary parts of the transform is computed
+exactly by linear propagation, ``J C J^T``, where ``J`` is the (linear) DFT
+matrix and ``C`` the covariance of the input.
+"""
+
 import numpy as np
 import scipp as sc
 
@@ -5,14 +12,25 @@ from .freq import frequencies
 from .utility import construct_output
 
 
-def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.Dataset:
+def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup:
     """
-    Perform an analytical Fourier transform
+    Perform a discrete Fourier transform with analytical uncertainty propagation.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed.
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
+        :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
+        used.
     :param coord: The coordinate to compute the Fourier transform over.
-    :returns: A scipp Dataset with real and imaginary values for the Fourier
-        transformed result, with some "frequency" axis.
+        It must be evenly spaced; a ``TypeError`` is raised otherwise.
+    :param diag_tol: Tolerance used to decide if the output covariance
+        matrices are diagonal. Optional, defaults to 1e-12.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
+        Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
+        ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
+        Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
+        covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
     freq = frequencies(data, coord)
 
@@ -46,12 +64,26 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.Dataset:
 
 def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup:
     """
-    Performs an analytical Fast Fourier transform.
+    Perform a fast Fourier transform with analytical uncertainty propagation.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed.
+    Equivalent to :func:`dft`, but uses FFTs for both the values and the
+    covariance, so scales better with the number of points.
+
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
+        :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
+        used.
     :param coord: The coordinate to compute the Fourier transform over.
-    :returns: A scipp Dataset with real and imaginary values for the Fourier
-        transformed result, with some "frequency" axis.
+        It must be evenly spaced; a ``TypeError`` is raised otherwise.
+    :param diag_tol: Tolerance used to decide if the output covariance
+        matrices are diagonal. Optional, defaults to 1e-12.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
+        Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
+        ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
+        Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
+        covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
     freq = frequencies(data, coord)
 
