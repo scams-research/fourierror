@@ -4,7 +4,7 @@ from scipy.stats import multivariate_normal
 
 from .freq import frequencies
 from .variable import CovVariable
-from .utility import construct_output
+from .utility import construct_output, validate_input
 
 
 def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
@@ -53,9 +53,13 @@ def dft(
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
     :param random_state: Passed to the random sampler to enable reproducibility.
 
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with some "frequency" axis.
         an omega axis.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     mv_norm = _generate_mv_norm(data)
@@ -91,8 +95,12 @@ def fft(
     :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
     :param random_state: Passed to the random sampler to enable reproducibility.
 
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp Dataset with real and imaginary values for the fast Fourier transformed result with some "frequency" axis.
     """
+    validate_input(data, coord)
     d = data.coords[coord][1:] - data.coords[coord][:-1]
     if not sc.allclose(d, d[0]):
         raise TypeError("Values must be evenly spaced to compute a DFT.")

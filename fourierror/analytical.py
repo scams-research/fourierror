@@ -2,7 +2,7 @@ import numpy as np
 import scipp as sc
 
 from .freq import frequencies
-from .utility import construct_output
+from .utility import construct_output, validate_input
 
 
 def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.Dataset:
@@ -11,9 +11,13 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.Dataset:
 
     :param data: A scipp DataArray with the data to be Fourier transformed.
     :param coord: The coordinate to compute the Fourier transform over.
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp Dataset with real and imaginary values for the Fourier
         transformed result, with some "frequency" axis.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     if hasattr(data.data, "covariance"):
@@ -50,9 +54,13 @@ def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
 
     :param data: A scipp DataArray with the data to be Fourier transformed.
     :param coord: The coordinate to compute the Fourier transform over.
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp Dataset with real and imaginary values for the Fourier
         transformed result, with some "frequency" axis.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     if hasattr(data.data, "covariance"):
