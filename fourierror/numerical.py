@@ -1,3 +1,10 @@
+"""Monte Carlo propagation of uncertainty through the discrete Fourier transform.
+
+Samples are drawn from a multivariate normal distribution described by the
+input values and covariance, each sample is transformed, and the mean and
+covariance of the transformed samples are returned.
+"""
+
 import numpy as np
 import scipp as sc
 from scipy.stats import multivariate_normal
@@ -22,14 +29,16 @@ def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
     return multivariate_normal(mean=data.values, cov=cov, allow_singular=True)
 
 
-def _construct_real_imag_arrays(f_samples: np.ndarray) -> tuple[sc.DataArray]:
+def _construct_real_imag_arrays(
+    f_samples: np.ndarray,
+) -> tuple[CovVariable, CovVariable]:
     """
     Construct the scipp arrays from the samples.
 
-    :f_samples: Samples to be turned into scipp arrays.
+    :param f_samples: Complex samples, with shape ``(n_frequencies, n_samples)``.
 
-    :returns: A tuple of scipp DataArrays, the first is real values and the second
-        is imaginary.
+    :returns: A tuple of :class:`~fourierror.variable.CovVariable` objects: the
+        sample mean and covariance of the real part, then of the imaginary part.
     """
     f_real = f_samples.real
     real = CovVariable(dims=["omega"], values=f_real.mean(1), covariance=np.cov(f_real))
@@ -42,22 +51,35 @@ def dft(
     data: sc.DataArray,
     coord: str,
     n_samples: int = 5_000,
-    random_state: [None, int, np.random.Generator] = None,
+    random_state: None | int | np.random.Generator = None,
     diag_tol: float = 1e-12,
-) -> sc.Dataset:
+) -> sc.DataGroup:
     """
     Perform a numerical discrete Fourier transform.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed.
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
+        :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
+        used.
     :param coord: The coordinate to compute the Fourier transform over.
-    :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
-    :param random_state: Passed to the random sampler to enable reproducibility.
+        It must be evenly spaced; a ``TypeError`` is raised otherwise.
+    :param n_samples: Number of samples to use to obtain numerical solution.
+        Optional, defaults to 5000.
+    :param random_state: Seed or generator passed to the random sampler, to
+        enable reproducibility. Optional, defaults to ``None``.
+    :param diag_tol: Tolerance used to decide if the output covariance
+        matrices are diagonal. Optional, defaults to 1e-12.
 
     :raises ValueError: If ``data`` is not one-dimensional, has no variances and
         is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
         dimension of ``data``.
-    :returns: A scipp Dataset with real and imaginary values for the Fourier transformed result with some "frequency" axis.
-        an omega axis.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
+        sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
+        samples, on an ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
+        Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
+        covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
     validate_input(data, coord)
     freq = frequencies(data, coord)
@@ -84,21 +106,35 @@ def fft(
     data: sc.DataArray,
     coord: str,
     n_samples: int = 5_000,
-    random_state: [None, int, np.random.Generator] = None,
+    random_state: None | int | np.random.Generator = None,
     diag_tol: float = 1e-12,
-) -> sc.Dataset:
+) -> sc.DataGroup:
     """
     Perform a numerical fast Fourier transform.
 
-    :param data: A scipp DataArray with the data to be fast Fourier transformed.
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
+        :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
+        used.
     :param coord: The coordinate to compute the fast Fourier transform over.
-    :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
-    :param random_state: Passed to the random sampler to enable reproducibility.
+        It must be evenly spaced; a ``TypeError`` is raised otherwise.
+    :param n_samples: Number of samples to use to obtain numerical solution.
+        Optional, defaults to 5000.
+    :param random_state: Seed or generator passed to the random sampler, to
+        enable reproducibility. Optional, defaults to ``None``.
+    :param diag_tol: Tolerance used to decide if the output covariance
+        matrices are diagonal. Optional, defaults to 1e-12.
 
     :raises ValueError: If ``data`` is not one-dimensional, has no variances and
         is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
         dimension of ``data``.
-    :returns: A scipp Dataset with real and imaginary values for the fast Fourier transformed result with some "frequency" axis.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
+        sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
+        samples, on an ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
+        Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
+        covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
     validate_input(data, coord)
     d = data.coords[coord][1:] - data.coords[coord][:-1]

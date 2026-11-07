@@ -41,6 +41,7 @@ release = __version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "myst_parser",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
@@ -57,6 +58,24 @@ nbsphinx_kernel_name = "python3"
 templates_path = ["_templates"]
 
 autodoc_member_order = "bysource"
+
+# Arithmetic dunders carry the covariance propagation, so document them too.
+autodoc_default_options = {
+    "special-members": "__add__, __radd__, __sub__, __rsub__, __mul__, __rmul__, "
+    "__truediv__, __rtruediv__, __neg__, __abs__, __pow__, __getitem__",
+}
+
+
+def _skip_unsupported(app, what, name, obj, skip, options):
+    """Hide the generated stubs that only raise CovarianceError."""
+    if getattr(obj, "_covariance_unsupported", False):
+        return True
+    return None
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", _skip_unsupported)
+
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
