@@ -44,14 +44,17 @@ class CovarianceError(RuntimeError):
 
 
 def _mirror(dims: Sequence[str]) -> tuple[str, ...]:
+    """Return the mirror labels used for the second axis of the covariance."""
     return tuple(d + MIRROR for d in dims)
 
 
 def _cov_dims(dims: Sequence[str]) -> tuple[str, ...]:
+    """Return the dims of the covariance of a variable with ``dims``."""
     return (*dims, *_mirror(dims))
 
 
 def _check_dim_labels(dims: Iterable[str]) -> None:
+    """Raise :class:`CovarianceError` if a label uses the reserved mirror suffix."""
     for d in dims:
         if d.endswith(MIRROR):
             raise CovarianceError(
@@ -95,6 +98,7 @@ def _shares_buffer(a: sc.Variable, b: sc.Variable) -> bool:
 
 
 def _as_unit(unit: Any) -> sc.Unit:
+    """Coerce ``unit`` to a ``scipp.Unit``."""
     return unit if isinstance(unit, sc.Unit) else sc.Unit(unit)
 
 
@@ -167,6 +171,7 @@ class CovVariable(sc.Variable):
         unit: Any = sc.units.dimensionless,
         dtype: Any = None,
     ) -> None:
+        """Create the variable; see the class docstring for the parameters."""
         dims = tuple(dims)
         _check_dim_labels(dims)
         values = np.asarray(values, dtype=np.float64)
@@ -188,6 +193,12 @@ class CovVariable(sc.Variable):
     def _coerce_covariance(
         covariance: Any, dims: tuple[str, ...], shape: tuple[int, ...], unit: Any
     ) -> sc.Variable:
+        """Convert ``covariance`` to a ``Variable`` in the canonical layout.
+
+        ``None`` gives a zero covariance; a ``Variable`` is transposed and
+        converted to ``unit**2``; anything else is reshaped to
+        ``(*shape, *shape)``.
+        """
         cov_dims = _cov_dims(dims)
         cov_shape = (*shape, *shape)
         cov_unit = _as_unit(unit) ** 2
@@ -244,6 +255,14 @@ class CovVariable(sc.Variable):
 
     @covariance.setter
     def covariance(self, cov: Any) -> None:
+        """The full covariance matrix, with dims ``(*dims, *mirror(dims))``.
+
+        A copy. Returning the stored matrix would let a caller write through the
+        accessor -- ``var.covariance.values[0, 0] = x`` -- and leave the
+        ``variances == diag(covariance)`` invariant broken with no error. Bind
+        it to a local name if you read it repeatedly; it is ``N x N``. Assigning
+        replaces the covariance and updates the variances to match.
+        """
         cov = self._coerce_covariance(
             cov, tuple(self.dims), tuple(self.shape), self.unit
         )
@@ -269,10 +288,16 @@ class CovVariable(sc.Variable):
 
     @property
     def _n(self) -> int:
+        """The total number of elements."""
         return int(np.prod(self.shape, dtype=int))
 
     @sc.Variable.variances.setter  # type: ignore[misc]
     def variances(self, _: Any) -> None:
+        """The variances, i.e. the diagonal of :attr:`covariance`.
+
+        Read-only: assigning raises :class:`CovarianceError`; assign to
+        :attr:`covariance` instead.
+        """
         raise CovarianceError(
             "Cannot set 'variances' on a CovVariable; they are the diagonal "
             "of 'covariance'. Assign to 'covariance' instead."
@@ -292,6 +317,7 @@ class CovVariable(sc.Variable):
         )
 
     def __repr__(self) -> str:
+        """Return the scipp representation followed by the correlation matrix."""
         base = sc.Variable.__repr__(self).split("> ", 1)[1]
         corr = np.array2string(_matrix(self.correlation, self._n), precision=3)
         return f"<CovVariable> {base}\n  correlation:\n{corr}"
@@ -300,6 +326,7 @@ class CovVariable(sc.Variable):
         # scipp's variable_repr (src/scipp/visualization/formatting_html.py)
         # hard-codes a 'scipp.' prefix on the class name, which is wrong for a
         # class defined outside the scipp namespace.
+        """Return scipp's HTML representation, without the ``scipp.`` prefix."""
         name = type(self).__name__
         return sc.Variable._repr_html_(self).replace(
             f"<div class='sc-obj-type'>scipp.{name} ",
@@ -364,6 +391,7 @@ class CovVariable(sc.Variable):
     # -- arithmetic ----------------------------------------------------------
 
     def __add__(self, other: Any) -> CovVariable:
+        """Return ``self + other``, propagating the covariance."""
         rhs = _as_operand(other)
         one = _unit_derivative(self, rhs)
         return self._binary(other, _values_only(self) + _values_only(rhs), one, one)
@@ -371,14 +399,17 @@ class CovVariable(sc.Variable):
     __radd__ = __add__
 
     def __sub__(self, other: Any) -> CovVariable:
+        """Return ``self - other``, propagating the covariance."""
         rhs = _as_operand(other)
         one = _unit_derivative(self, rhs)
         return self._binary(other, _values_only(self) - _values_only(rhs), one, -one)
 
     def __rsub__(self, other: Any) -> CovVariable:
+        """Return ``other - self``, propagating the covariance."""
         return (-self).__add__(other)
 
     def __mul__(self, other: Any) -> CovVariable:
+        """Return ``self * other``, propagating the covariance."""
         rhs = _values_only(_as_operand(other))
         lhs = _values_only(self)
         return self._binary(other, lhs * rhs, rhs, lhs)
@@ -386,11 +417,13 @@ class CovVariable(sc.Variable):
     __rmul__ = __mul__
 
     def __truediv__(self, other: Any) -> CovVariable:
+        """Return ``self / other``, propagating the covariance."""
         rhs = _values_only(_as_operand(other))
         lhs = _values_only(self)
         return self._binary(other, lhs / rhs, sc.reciprocal(rhs), -lhs / (rhs * rhs))
 
     def __rtruediv__(self, other: Any) -> CovVariable:
+        """Return ``other / self``, propagating the covariance."""
         lhs = _values_only(_as_operand(other))
         rhs = _values_only(self)
         base = lhs / rhs
@@ -402,9 +435,11 @@ class CovVariable(sc.Variable):
         return self._wrap(base, cov)
 
     def __neg__(self) -> CovVariable:
+        """Return ``-self``; the covariance is unchanged."""
         return self._wrap(-_values_only(self), self._covariance)
 
     def __abs__(self) -> CovVariable:
+        """Return ``abs(self)``, flipping the sign of correlations as needed."""
         values = _values_only(self)
         sign = sc.array(
             dims=list(values.dims),
@@ -422,21 +457,34 @@ class CovVariable(sc.Variable):
     # legal for ``+=`` and keeps the object consistent.
 
     def __iadd__(self, other: Any) -> CovVariable:  # noqa: PYI034
+        """Return ``self + other`` as a new object.
+
+        The in-place operators rebind rather than mutate, so the covariance
+        cannot go stale.
+        """
         return self.__add__(other)
 
     def __isub__(self, other: Any) -> CovVariable:  # noqa: PYI034
+        """Return ``self - other`` as a new object; see :meth:`__iadd__`."""
         return self.__sub__(other)
 
     def __imul__(self, other: Any) -> CovVariable:  # noqa: PYI034
+        """Return ``self * other`` as a new object; see :meth:`__iadd__`."""
         return self.__mul__(other)
 
     def __itruediv__(self, other: Any) -> CovVariable:  # noqa: PYI034
+        """Return ``self / other`` as a new object; see :meth:`__iadd__`."""
         return self.__truediv__(other)
 
     def __ipow__(self, other: Any) -> CovVariable:  # noqa: PYI034
+        """Return ``self ** other`` as a new object; see :meth:`__iadd__`."""
         return self.__pow__(other)
 
     def __pow__(self, exponent: Any) -> CovVariable:
+        """Return ``self ** exponent``, propagating the covariance.
+
+        Raises :class:`CovarianceError` if the exponent has an uncertainty.
+        """
         if self._covariance_of(exponent) is not None:
             raise CovarianceError("Exponents with uncertainties are not supported.")
         e = float(exponent) if not isinstance(exponent, sc.Variable) else exponent.value
@@ -446,27 +494,33 @@ class CovVariable(sc.Variable):
     # -- elementwise unary functions ----------------------------------------
 
     def _chain(self, base: sc.Variable, derivative: sc.Variable) -> CovVariable:
+        """Wrap ``base``, propagating the covariance through an elementwise derivative."""
         return self._wrap(base, self._sandwich(derivative, self._covariance))
 
     def sqrt(self) -> CovVariable:
+        """Elementwise square root, propagating the covariance."""
         root = sc.sqrt(_values_only(self))
         return self._chain(root, sc.reciprocal(2.0 * root))
 
     def exp(self) -> CovVariable:
+        """Elementwise exponential, propagating the covariance."""
         e = sc.exp(_values_only(self))
         return self._chain(e, e)
 
     def log(self) -> CovVariable:
+        """Elementwise natural logarithm, propagating the covariance."""
         values = _values_only(self)
         return self._chain(sc.log(values), sc.reciprocal(values))
 
     def sin(self) -> CovVariable:
         # d(sin x)/dx carries 1/rad: scipp's cos() returns a dimensionless
         # value, but the Jacobian must undo the rad of the covariance.
+        """Elementwise sine of an angle, propagating the covariance."""
         values = _values_only(self)
         return self._chain(sc.sin(values), sc.cos(values) / _RAD)
 
     def cos(self) -> CovVariable:
+        """Elementwise cosine of an angle, propagating the covariance."""
         values = _values_only(self)
         return self._chain(sc.cos(values), -sc.sin(values) / _RAD)
 
@@ -483,12 +537,14 @@ class CovVariable(sc.Variable):
         return self._wrap(base, cov)
 
     def mean(self, dim: str | Iterable[str] | None = None) -> CovVariable:
+        """Mean over ``dim`` (all dims if ``None``), including off-diagonal terms."""
         dims = self._reduction_dims(dim)
         n = float(np.prod([self.sizes[d] for d in dims], dtype=int))
         total = self.sum(dims)
         return self._wrap(_values_only(total) / n, total.covariance / (n * n))
 
     def _reduction_dims(self, dim: str | Iterable[str] | None) -> list[str]:
+        """Normalise a reduction ``dim`` argument to a list of dims."""
         if dim is None:
             return list(self.dims)
         return [dim] if isinstance(dim, str) else list(dim)
@@ -496,12 +552,20 @@ class CovVariable(sc.Variable):
     # -- shape and indexing --------------------------------------------------
 
     def __getitem__(self, key: Any) -> CovVariable:
+        """Slice, selecting the same elements on both axes of the covariance."""
         dim, index = _normalize_index(self, key)
         base = _values_only(self)[dim, index]
         cov = self._covariance[dim, index][dim + MIRROR, index]
         return self._wrap(base, cov)
 
     def transpose(self, dims: Sequence[str] | None = None) -> CovVariable:
+        """Transpose to ``dims``, reordering both axes of the covariance.
+
+        Parameters
+        ----------
+        dims:
+            The new dimension order; reversed if ``None``.
+        """
         base = _values_only(self).transpose(None if dims is None else list(dims))
         return self._wrap(base, self._covariance)
 
@@ -534,18 +598,38 @@ class CovVariable(sc.Variable):
     def to(
         self, *, unit: Any = None, dtype: Any = None, copy: bool = True
     ) -> CovVariable:
+        """Convert unit and/or dtype, scaling the covariance quadratically.
+
+        Parameters
+        ----------
+        unit:
+            Target unit.
+        dtype:
+            Target dtype.
+        copy:
+            Passed to ``scipp.Variable.to``.
+        """
         base = _values_only(self).to(unit=unit, dtype=dtype, copy=copy)
         # _wrap re-coerces the covariance to ``base.unit**2``, which performs
         # the quadratic scaling exactly once.
         return self._wrap(base, self._covariance)
 
     def copy(self, deep: bool = True) -> CovVariable:
+        """Return a copy of the variable and its covariance.
+
+        Parameters
+        ----------
+        deep:
+            Whether to copy the underlying buffers.
+        """
         return self._wrap(self.to_variable().copy(deep=deep), self._covariance)
 
     def __copy__(self) -> CovVariable:
+        """Return a shallow copy."""
         return self.copy(deep=False)
 
     def __deepcopy__(self, _: Any) -> CovVariable:
+        """Return a deep copy."""
         return self.copy(deep=True)
 
 
@@ -559,13 +643,17 @@ _SAFE_INHERITED = frozenset({"plot", "underlying_size"})
 
 
 def _unsupported_method(name: str) -> Any:
+    """Build a stub for ``name`` that raises :class:`CovarianceError`."""
+
     def fail(self: Any, *_: Any, **__: Any) -> Any:
+        """Not supported: raises :class:`CovarianceError`."""
         raise CovarianceError(
             f"'{name}' does not propagate a covariance matrix. Call "
             f"'.to_variable()' first if dropping the correlations is intended."
         )
 
     fail.__name__ = name
+    fail._covariance_unsupported = True
     fail.__qualname__ = f"CovVariable.{name}"
     return fail
 
@@ -606,6 +694,7 @@ _install_unsupported_stubs()
 
 
 def _as_operand(other: Any) -> sc.Variable:
+    """Coerce an operand to a plain ``Variable``, wrapping numbers as scalars."""
     if isinstance(other, CovVariable):
         return other.to_variable()
     if isinstance(other, sc.Variable):
@@ -621,6 +710,7 @@ def _unit_derivative(lhs: sc.Variable, rhs: sc.Variable) -> sc.Variable:
 
 
 def _normalize_index(var: sc.Variable, key: Any) -> tuple[str, Any]:
+    """Split an index into ``(dim, index)``, inferring the dim for 1-D input."""
     if isinstance(key, tuple):
         dim, index = key
         return str(dim), index
@@ -778,8 +868,16 @@ def _contains_covariance(obj: Any, _depth: int = 0) -> bool:
 
 
 def _make_dispatcher(name: str, original: Any, target: Any) -> Any:
+    """Wrap the scipp free function ``name`` so it is covariance aware.
+
+    The wrapper calls ``original`` when no argument carries a covariance,
+    maps over DataGroups, calls ``target`` otherwise, and raises
+    :class:`CovarianceError` if ``target`` is ``None``.
+    """
+
     @functools.wraps(original)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        """Dispatch to the covariance-aware implementation when needed."""
         if not any(_contains_covariance(x) for x in (*args, *kwargs.values())):
             return original(*args, **kwargs)
         # Map over DataGroups here. scipp would hand the raw C++ function to
@@ -871,8 +969,11 @@ _ORIGINAL_OPERATORS: dict[tuple[type, str], Any] = {}
 
 
 def _make_deferring_operator(original: Any) -> Any:
+    """Wrap a scipp operator so it defers to a covariance-carrying operand."""
+
     @functools.wraps(original)
     def wrapper(self: Any, other: Any) -> Any:
+        """Return ``NotImplemented`` if ``other`` carries a covariance."""
         if hasattr(other, "_covariance"):
             # Hand the operation to the covariance-carrying operand's reflected
             # method. Python only does this automatically when the right operand
@@ -888,7 +989,7 @@ def _make_deferring_operator(original: Any) -> Any:
 def install_operand_deferral() -> None:
     """Make plain scipp objects defer to a covariance-carrying right operand.
 
-    Installed automatically when ``covariance_data_array`` is imported, because
+    Installed automatically when :mod:`fourierror.data_array` is imported, because
     without it ``plain_variable * cov_data_array`` silently returns a plain
     ``DataArray``: ``CovDataArray`` subclasses ``DataArray`` but not
     ``Variable``, so Python grants it no reflected-operand priority, and

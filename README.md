@@ -14,10 +14,10 @@ The package is built on [`scipp`](https://scipp.github.io), so units and coordin
 import fourierror
 
 result = fourierror.analytical.dft(data, coord="time")
-result["real"], result["imaginary"]   # values and variances
+result["real"], result["imag"]   # values and (co)variances
 ```
 
-`data` is a `scipp.DataArray` with variances; the result is a `scipp.Dataset` on a frequency axis. 
+`data` is a `scipp.DataArray` with variances; the result is a `scipp.DataGroup` of the real and imaginary parts on a frequency axis. 
 If you're new to scipp, the [getting started guide](https://scipp.github.io/getting-started/index.html) is a good first stop.
 
 A publication describing the propagation scheme — and guidance on when to prefer the numerical or analytical method — is in preparation.

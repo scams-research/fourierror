@@ -1,15 +1,19 @@
+"""The frequency axis of a discrete Fourier transform."""
+
 import scipp as sc
 from numpy import pi
 
 
-def frequencies(data: sc.DataArray, coord: str) -> sc.DataArray:
+def frequencies(data: sc.DataArray, coord: str) -> sc.Variable:
     """
     Generate the DFT frequencies.
 
     :param data: A scipp DataArray for which frequencies should be found.
     :param coord: The coordinate over which the frequencies should be found.
 
-    :returns: DFT frequencies as a scipp DataArray.
+    :returns: Angular DFT frequencies, ``2 * pi * fftfreq(n, d)``, as a scipp
+        Variable with dimension ``omega`` and the reciprocal unit of ``coord``.
+    :raises TypeError: If the coordinate is not evenly spaced.
     """
 
     d = data.coords[coord][1:] - data.coords[coord][:-1]
