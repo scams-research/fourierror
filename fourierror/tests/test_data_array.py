@@ -251,3 +251,185 @@ def test_every_inherited_data_array_method_is_accounted_for():
         and name not in vars(CovDataArray)
     ]
     assert missing == []
+
+
+# -- further construction ---------------------------------------------------
+
+
+def test_covariance_argument_overrides_data(da):
+    other = CovDataArray(data=da.data, covariance=np.eye(3))
+    np.testing.assert_allclose(cov_of(other), np.eye(3))
+
+
+def test_plain_variable_data_without_covariance():
+    var = sc.array(dims=["x"], values=[1.0, 2.0], variances=[0.1, 0.2])
+    np.testing.assert_allclose(cov_of(CovDataArray(data=var)), np.diag([0.1, 0.2]))
+
+
+def test_factory_function():
+    from fourierror.data_array import covariance_data_array
+
+    result = covariance_data_array(
+        data=covariance_array(dims=["x"], values=[1.0], covariance=[[0.5]])
+    )
+    assert isinstance(result, CovDataArray)
+
+
+def test_setting_covariance(da):
+    da.covariance = np.diag([1.0, 2.0, 3.0])
+    np.testing.assert_allclose(da.variances, [1.0, 2.0, 3.0])
+    np.testing.assert_allclose(da.data.values, [1.0, 2.0, 3.0])
+
+
+def test_setting_plain_data(da):
+    da.data = sc.array(
+        dims=["x"], values=[0.0, 0.0, 0.0], variances=[1.0, 1.0, 1.0], unit="m"
+    )
+    np.testing.assert_allclose(cov_of(da), np.eye(3))
+
+
+def test_correlation(da):
+    sigma = np.sqrt(np.diag(COV3))
+    np.testing.assert_allclose(da.correlation.values, COV3 / np.outer(sigma, sigma))
+
+
+def test_repr(da):
+    assert repr(da).startswith("<CovDataArray>")
+
+
+def test_masks_and_name_survive_operations():
+    cv = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV3[:2, :2])
+    mask = sc.array(dims=["x"], values=[False, True])
+    d = CovDataArray(
+        data=cv, coords={"x": sc.arange("x", 2.0)}, masks={"m": mask}, name="n"
+    )
+    out = d * 2.0
+    assert sc.identical(out.masks["m"], mask)
+    # Binary ops drop the name, as in plain scipp; unary ops and copies keep it.
+    assert out.name == (sc.DataArray.__mul__(d.to_data_array(), 2.0)).name
+    assert (-d).name == "n"
+    assert d.copy().name == "n"
+    assert d.to_data_array().name == "n"
+
+
+# -- further arithmetic -----------------------------------------------------
+
+
+def reference(f, x, cov, eps=1e-6):
+    x = np.asarray(x, dtype=float)
+    jac = np.empty((x.size, x.size))
+    for i in range(x.size):
+        dx = np.zeros_like(x)
+        dx[i] = eps
+        jac[:, i] = (f(x + dx) - f(x - dx)) / (2 * eps)
+    return jac @ cov @ jac.T
+
+
+def test_division_by_scalar(da):
+    np.testing.assert_allclose(cov_of(da / 2.0), COV3 / 4)
+
+
+def test_reflected_division(da):
+    result = 6.0 / da
+    np.testing.assert_allclose(result.data.values, [6.0, 3.0, 2.0])
+    expected = reference(lambda v: 6.0 / v, [1.0, 2.0, 3.0], COV3)
+    np.testing.assert_allclose(cov_of(result), expected, rtol=1e-5)
+    assert list(result.coords.keys()) == ["x"]
+
+
+def test_power(da):
+    expected = reference(lambda v: v**2, [1.0, 2.0, 3.0], COV3)
+    result = da**2
+    assert isinstance(result, CovDataArray)
+    np.testing.assert_allclose(cov_of(result), expected, rtol=1e-5)
+    assert result.unit == sc.Unit("m**2")
+
+
+def test_reflected_addition_and_subtraction(da):
+    one = sc.scalar(1.0, unit="m")
+    added = one + da
+    assert isinstance(added, CovDataArray)
+    np.testing.assert_allclose(added.data.values, [2.0, 3.0, 4.0])
+    np.testing.assert_allclose(cov_of(added), COV3)
+    subbed = one - da
+    assert isinstance(subbed, CovDataArray)
+    np.testing.assert_allclose(subbed.data.values, [0.0, -1.0, -2.0])
+    np.testing.assert_allclose(cov_of(subbed), COV3)
+
+
+def test_plain_variable_times_cov_data_array(da):
+    result = sc.scalar(2.0) * da
+    assert isinstance(result, CovDataArray)
+    np.testing.assert_allclose(cov_of(result), 4 * COV3)
+
+
+def test_operand_is_a_cov_variable(da):
+    cv = covariance_array(
+        dims=["x"], values=[1.0, 1.0, 1.0], covariance=np.eye(3) * 0.01, unit="m"
+    )
+    np.testing.assert_allclose(cov_of(da + cv), COV3 + np.eye(3) * 0.01)
+
+
+def test_operand_is_a_plain_data_array(da):
+    plain = sc.DataArray(
+        data=sc.array(
+            dims=["x"], values=[1.0, 1.0, 1.0], variances=[0.1, 0.1, 0.1], unit="m"
+        ),
+        coords={"x": sc.arange("x", 3.0)},
+    )
+    np.testing.assert_allclose(cov_of(da + plain), COV3 + np.eye(3) * 0.1)
+
+
+def test_mismatched_coords_raise(da):
+    other = CovDataArray(
+        data=covariance_array(dims=["x"], values=[1.0, 1.0, 1.0], unit="m"),
+        coords={"x": sc.arange("x", 1.0, 4.0)},
+    )
+    with pytest.raises(sc.DatasetError):
+        da + other
+
+
+@pytest.mark.parametrize(
+    ("op", "rhs", "factor"),
+    [("__isub__", 0.0, 1.0), ("__imul__", 2.0, 4.0), ("__itruediv__", 2.0, 0.25)],
+)
+def test_in_place_operators(da, op, rhs, factor):
+    if op == "__isub__":
+        rhs = sc.scalar(1.0, unit="m")
+    result = getattr(da, op)(rhs)
+    assert isinstance(result, CovDataArray)
+    np.testing.assert_allclose(cov_of(result), factor * COV3)
+
+
+def test_reduction_over_all_dims(da):
+    assert float(da.sum().data.variance) == pytest.approx(COV3.sum())
+    assert float(da.mean().data.variance) == pytest.approx(COV3.sum() / 9)
+
+
+# -- further shape operations -----------------------------------------------
+
+
+def test_unit_conversion(da):
+    cm = da.to(unit="cm")
+    assert isinstance(cm, CovDataArray)
+    np.testing.assert_allclose(cm.data.values, [100.0, 200.0, 300.0])
+    np.testing.assert_allclose(cov_of(cm), COV3 * 1e4)
+
+
+def test_shallow_and_deep_copy(da):
+    import copy
+
+    for c in (copy.copy(da), copy.deepcopy(da)):
+        assert isinstance(c, CovDataArray)
+        np.testing.assert_allclose(cov_of(c), COV3)
+
+
+def test_boolean_mask_indexing(da):
+    s = da[sc.array(dims=["x"], values=[True, False, True])]
+    np.testing.assert_allclose(cov_of(s), COV3[np.ix_([0, 2], [0, 2])])
+
+
+@pytest.mark.parametrize("op", ["__floordiv__", "__mod__"])
+def test_operators_without_covariance_meaning_raise(da, op):
+    with pytest.raises(CovarianceError):
+        getattr(da, op)(da)
