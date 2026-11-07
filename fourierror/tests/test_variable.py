@@ -547,3 +547,214 @@ def test_uninstall_dispatch_restores_scipp(a):
     install_dispatch()
     uninstall_dispatch()
     assert type(sc.sum(sc.DataGroup({"a": a}), "x")["a"]) is sc.Variable
+
+
+# -- construction edge cases ------------------------------------------------
+
+
+def test_missing_covariance_is_zero():
+    v = covariance_array(dims=["x"], values=[1.0, 2.0], unit="m")
+    np.testing.assert_allclose(cov_matrix(v), np.zeros((2, 2)))
+    np.testing.assert_allclose(v.variances, [0.0, 0.0])
+    assert v.covariance.unit == sc.Unit("m**2")
+
+
+def test_covariance_variable_is_transposed_and_converted():
+    cov = sc.array(dims=["x'", "x"], values=COV2.T * 1e4, unit="cm**2")
+    v = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=cov, unit="m")
+    assert v.covariance.dims == ("x", "x'")
+    np.testing.assert_allclose(cov_matrix(v), COV2)
+
+
+def test_covariance_variable_variances_are_ignored():
+    cov = sc.array(dims=["x", "x'"], values=COV2, variances=np.ones((2, 2)))
+    v = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=cov)
+    assert v.covariance.variances is None
+
+
+def test_covariance_scalar():
+    s = covariance_scalar(3.0, variance=0.5, unit="s")
+    assert s.dims == ()
+    assert s.value == 3.0
+    assert s.variance == 0.5
+    assert s.unit == sc.Unit("s")
+
+
+def test_canonical_broadcasts_missing_dims():
+    from fourierror.variable import _canonical
+
+    cov = _canonical(sc.scalar(0.5), ["x"], [3])
+    assert cov.dims == ("x", "x'")
+    np.testing.assert_allclose(cov.values, np.full((3, 3), 0.5))
+
+
+def test_repr_shows_correlation(a):
+    text = repr(a)
+    assert text.startswith("<CovVariable>")
+    assert "correlation" in text
+
+
+def test_correlation_with_zero_variance_is_zero():
+    v = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=np.diag([0.0, 1.0]))
+    np.testing.assert_allclose(v.correlation.values, [[0.0, 0.0], [0.0, 1.0]])
+
+
+# -- further arithmetic -----------------------------------------------------
+
+
+def test_plain_variable_with_variances_is_treated_as_uncorrelated():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    b = sc.array(dims=["x"], values=[1.0, 1.0], variances=[0.5, 0.25], unit="m")
+    np.testing.assert_allclose(cov_matrix(a + b), COV2 + np.diag([0.5, 0.25]))
+    np.testing.assert_allclose(cov_matrix(a - b), COV2 + np.diag([0.5, 0.25]))
+
+
+def test_plain_variable_without_variances_is_exact():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2, unit="m")
+    b = sc.array(dims=["x"], values=[2.0, 3.0], unit="m")
+    np.testing.assert_allclose(cov_matrix(a + b), COV2)
+
+
+def test_reflected_division_matches_reference():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
+    result = 3.0 / a
+    np.testing.assert_allclose(result.values, [3.0, 1.5])
+    expected = reference_propagate(lambda v: 3.0 / v, [1.0, 2.0], COV2)
+    np.testing.assert_allclose(cov_matrix(result), expected, rtol=1e-5)
+
+
+def test_reflected_division_by_uncertain_numerator():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
+    num = sc.array(dims=["x"], values=[3.0, 4.0], variances=[0.1, 0.2])
+    result = num / a
+    assert isinstance(result, CovVariable)
+    expected = reference_propagate(
+        lambda v: v[2:] / v[:2],
+        np.array([1.0, 2.0, 3.0, 4.0]),
+        np.block([[COV2, np.zeros((2, 2))], [np.zeros((2, 2)), np.diag([0.1, 0.2])]]),
+    )
+    np.testing.assert_allclose(cov_matrix(result), expected, rtol=1e-5)
+
+
+def test_in_place_power():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
+    a **= 2
+    assert isinstance(a, CovVariable)
+    expected = reference_propagate(lambda v: v**2, [1.0, 2.0], COV2)
+    np.testing.assert_allclose(cov_matrix(a), expected, rtol=1e-5)
+
+
+def test_power_with_variable_exponent():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
+    np.testing.assert_allclose(cov_matrix(a ** sc.scalar(2.0)), cov_matrix(a**2))
+
+
+def test_uncertain_exponent_is_rejected():
+    a = covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2)
+    with pytest.raises(CovarianceError):
+        a ** sc.scalar(2.0, variance=0.1)
+
+
+def test_sum_and_mean_over_all_dims(a):
+    assert a.sum().dims == ()
+    assert float(a.sum().variance) == pytest.approx(COV3.sum())
+    assert float(a.mean().variance) == pytest.approx(COV3.sum() / 9)
+
+
+def test_sum_over_one_of_two_dims():
+    rng = np.random.default_rng(2)
+    m = rng.normal(size=(6, 6))
+    cov = m @ m.T
+    v = covariance_array(dims=["x", "y"], values=np.ones((2, 3)), covariance=cov)
+    total = v.sum("y")
+    # Sum of each 3x3 block of the covariance.
+    expected = cov.reshape(2, 3, 2, 3).sum(axis=(1, 3))
+    np.testing.assert_allclose(cov_matrix(total), expected)
+
+
+# -- further shape operations ----------------------------------------------
+
+
+def test_broadcast_with_dims_and_shape():
+    a = covariance_scalar(1.0, variance=0.1)
+    wide = a.broadcast(dims=["x"], shape=[2])
+    np.testing.assert_allclose(cov_matrix(wide), np.full((2, 2), 0.1))
+
+
+def test_broadcast_requires_a_shape():
+    a = covariance_scalar(1.0, variance=0.1)
+    with pytest.raises(TypeError):
+        a.broadcast(dims=["x"])
+
+
+def test_broadcast_rejects_reserved_label():
+    a = covariance_scalar(1.0, variance=0.1)
+    with pytest.raises(CovarianceError):
+        a.broadcast(sizes={"x'": 2})
+
+
+def test_implicit_dimension_indexing(a):
+    s = a[0:2]
+    np.testing.assert_allclose(cov_matrix(s), COV3[:2, :2])
+
+
+def test_implicit_dimension_indexing_requires_1d():
+    v = covariance_array(dims=["x", "y"], values=np.ones((2, 2)))
+    with pytest.raises(CovarianceError):
+        v[0]
+
+
+def test_shallow_and_deep_copy(a):
+    import copy
+
+    for c in (copy.copy(a), copy.deepcopy(a)):
+        assert isinstance(c, CovVariable)
+        np.testing.assert_allclose(cov_matrix(c), COV3)
+
+
+def test_concat_rejects_plain_variables(a):
+    with pytest.raises(CovarianceError):
+        concat([a, sc.array(dims=["x"], values=[1.0], unit="m")], "x")
+
+
+# -- dispatch bookkeeping ---------------------------------------------------
+
+
+def test_install_dispatch_is_idempotent(a):
+    install_dispatch()
+    install_dispatch()
+    try:
+        assert isinstance(sc.sum(a, "x"), CovVariable)
+    finally:
+        uninstall_dispatch()
+    assert type(sc.sum(a, "x")) is sc.Variable
+
+
+def test_deeply_nested_covariance_is_not_searched():
+    from fourierror.variable import _contains_covariance
+
+    a = covariance_array(dims=["x"], values=[1.0])
+    assert _contains_covariance([[a]])
+    assert not _contains_covariance([[[[[a]]]]])
+    assert not _contains_covariance(1.0)
+
+
+def test_operand_deferral_can_be_uninstalled():
+    from fourierror.data_array import CovDataArray
+    from fourierror.variable import (
+        install_operand_deferral,
+        uninstall_operand_deferral,
+    )
+
+    da = CovDataArray(
+        data=covariance_array(dims=["x"], values=[1.0, 2.0], covariance=COV2),
+        coords={"x": sc.arange("x", 2.0)},
+    )
+    plain = sc.scalar(2.0)
+    assert isinstance(plain * da, CovDataArray)
+    uninstall_operand_deferral()
+    try:
+        assert type(plain * da) is sc.DataArray
+    finally:
+        install_operand_deferral()
+    assert isinstance(plain * da, CovDataArray)
