@@ -57,19 +57,24 @@ def dft(
     """
     Perform a numerical discrete Fourier transform.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed. Its
-        variances are taken as uncorrelated, unless it is a
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
         :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
         used.
     :param coord: The coordinate to compute the Fourier transform over.
         It must be evenly spaced; a ``TypeError`` is raised otherwise.
-    :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
-    :param random_state: Passed to the random sampler to enable reproducibility.
+    :param n_samples: Number of samples to use to obtain numerical solution.
+        Optional, defaults to 5000.
+    :param random_state: Seed or generator passed to the random sampler, to
+        enable reproducibility. Optional, defaults to ``None``.
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
 
-    :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
-        Fourier transformed result, on an ``omega`` (angular frequency) axis.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
+        sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
+        samples, on an ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
@@ -103,19 +108,24 @@ def fft(
     """
     Perform a numerical fast Fourier transform.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed. Its
-        variances are taken as uncorrelated, unless it is a
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
         :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
         used.
     :param coord: The coordinate to compute the fast Fourier transform over.
         It must be evenly spaced; a ``TypeError`` is raised otherwise.
-    :param n_samples: Number of samples to use to obtain numerical solution. Optional, defaults to 5000.
-    :param random_state: Passed to the random sampler to enable reproducibility.
+    :param n_samples: Number of samples to use to obtain numerical solution.
+        Optional, defaults to 5000.
+    :param random_state: Seed or generator passed to the random sampler, to
+        enable reproducibility. Optional, defaults to ``None``.
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
 
-    :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
-        Fourier transformed result, on an ``omega`` (angular frequency) axis.
+    :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
+        sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
+        samples, on an ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """

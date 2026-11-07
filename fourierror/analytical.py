@@ -16,8 +16,9 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
     """
     Perform a discrete Fourier transform with analytical uncertainty propagation.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed. Its
-        variances are taken as uncorrelated, unless it is a
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
         :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
         used.
     :param coord: The coordinate to compute the Fourier transform over.
@@ -25,7 +26,9 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
-        Fourier transformed result, on an ``omega`` (angular frequency) axis.
+        Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
+        ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
@@ -66,8 +69,9 @@ def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
     Equivalent to :func:`dft`, but uses FFTs for both the values and the
     covariance, so scales better with the number of points.
 
-    :param data: A scipp DataArray with the data to be Fourier transformed. Its
-        variances are taken as uncorrelated, unless it is a
+    :param data: A one-dimensional scipp DataArray with variances, holding the
+        data to be Fourier transformed. Its variances are taken as
+        uncorrelated, unless it is a
         :class:`~fourierror.data_array.CovDataArray`, whose full covariance is
         used.
     :param coord: The coordinate to compute the Fourier transform over.
@@ -75,7 +79,9 @@ def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
-        Fourier transformed result, on an ``omega`` (angular frequency) axis.
+        Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
+        ``omega`` axis of angular frequencies (see
+        :func:`~fourierror.freq.frequencies`).
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
