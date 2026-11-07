@@ -11,7 +11,7 @@ from scipy.stats import multivariate_normal
 
 from .freq import frequencies
 from .variable import CovVariable
-from .utility import construct_output
+from .utility import construct_output, validate_input
 
 
 def _generate_mv_norm(data: sc.DataArray) -> multivariate_normal:
@@ -71,6 +71,9 @@ def dft(
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
 
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
         sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
         samples, on an ``omega`` axis of angular frequencies (see
@@ -78,6 +81,7 @@ def dft(
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     mv_norm = _generate_mv_norm(data)
@@ -122,6 +126,9 @@ def fft(
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
 
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries holding the
         sample mean and covariance of ``(2 / n) * numpy.fft.fft`` of the
         samples, on an ``omega`` axis of angular frequencies (see
@@ -129,6 +136,7 @@ def fft(
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
+    validate_input(data, coord)
     d = data.coords[coord][1:] - data.coords[coord][:-1]
     if not sc.allclose(d, d[0]):
         raise TypeError("Values must be evenly spaced to compute a DFT.")

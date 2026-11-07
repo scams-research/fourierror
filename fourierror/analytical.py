@@ -9,7 +9,7 @@ import numpy as np
 import scipp as sc
 
 from .freq import frequencies
-from .utility import construct_output
+from .utility import construct_output, validate_input
 
 
 def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup:
@@ -25,6 +25,9 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
         It must be evenly spaced; a ``TypeError`` is raised otherwise.
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
         Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
         ``omega`` axis of angular frequencies (see
@@ -32,6 +35,7 @@ def dft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     if hasattr(data.data, "covariance"):
@@ -78,6 +82,9 @@ def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
         It must be evenly spaced; a ``TypeError`` is raised otherwise.
     :param diag_tol: Tolerance used to decide if the output covariance
         matrices are diagonal. Optional, defaults to 1e-12.
+    :raises ValueError: If ``data`` is not one-dimensional, has no variances and
+        is not a ``CovDataArray``, or ``coord`` is not a coordinate along the
+        dimension of ``data``.
     :returns: A scipp DataGroup with ``real`` and ``imag`` entries for the
         Fourier transformed result, ``(2 / n) * numpy.fft.fft(values)``, on an
         ``omega`` axis of angular frequencies (see
@@ -85,6 +92,7 @@ def fft(data: sc.DataArray, coord: str, diag_tol: float = 1e-12) -> sc.DataGroup
         Each entry is a :class:`~fourierror.data_array.CovDataArray` if its
         covariance is not diagonal, otherwise a plain ``scipp.DataArray``.
     """
+    validate_input(data, coord)
     freq = frequencies(data, coord)
 
     if hasattr(data.data, "covariance"):
