@@ -51,7 +51,23 @@ The variances are treated as uncorrelated; to supply correlated uncertainties, p
 If you're new to scipp, the [getting started guide](https://scipp.github.io/getting-started/index.html) is a good first stop.
 See [Usage](usage) for a worked example and the [API](modules) reference for every function.
 
-A publication describing the propagation scheme — and guidance on when to prefer the numerical or analytical method — is in preparation.
+## Citing
+
+The propagation scheme, and guidance on when to prefer the numerical or analytical method, is described in the accompanying paper.
+If you use `fourierror` in your work, please cite:
+
+> T. Zolzaya and A. R. McCluskey, "Numerical and analytical strategies to propagate correlated uncertainties through the discrete Fourier transform", [arXiv:2611.12359](https://arxiv.org/abs/2611.12359) (2026).
+
+```bibtex
+@misc{zolzaya2026numerical,
+  title         = {Numerical and analytical strategies to propagate correlated uncertainties through the discrete {F}ourier transform},
+  author        = {Zolzaya, Tuguldur and McCluskey, Andrew R.},
+  year          = {2026},
+  eprint        = {2611.12359},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2611.12359}
+}
+```
 
 ## [Contributors](https://github.com/scams-research/fourierror/graphs/contributors)
 

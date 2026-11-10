@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use fourierror in your work, please cite the accompanying paper."
+title: fourierror
+abstract: "Propagation of uncertainty, including the full covariance, through the discrete Fourier transform."
+type: software
+authors:
+  - family-names: McCluskey
+    given-names: Andrew R.
+  - family-names: Zolzaya
+    given-names: Tuguldur
+version: 0.0.3
+license: MIT
+repository-code: "https://github.com/scams-research/fourierror"
+url: "https://scams-research.github.io/fourierror"
+keywords:
+  - uncertainty propagation
+  - covariance
+  - discrete Fourier transform
+  - scipp
+preferred-citation:
+  type: article
+  title: "Numerical and analytical strategies to propagate correlated uncertainties through the discrete Fourier transform"
+  authors:
+    - family-names: Zolzaya
+      given-names: Tuguldur
+    - family-names: McCluskey
+      given-names: Andrew R.
+  year: 2026
+  journal: "arXiv"
+  doi: "10.48550/arXiv.2611.12359"
+  url: "https://arxiv.org/abs/2611.12359"
